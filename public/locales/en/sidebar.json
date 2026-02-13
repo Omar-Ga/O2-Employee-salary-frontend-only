@@ -1,0 +1,15 @@
+{
+  "app": {
+    "subtitle": "Salaries"
+  },
+  "section": {
+    "main": "Main Menu"
+  },
+  "items": {
+    "dashboard": "Dashboard",
+    "employees": "Employees",
+    "payroll": "Payroll",
+    "recruitment": "Recruitment",
+    "settings": "Settings"
+  }
+}

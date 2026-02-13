@@ -1,0 +1,19 @@
+{
+  "welcome": "Employee Management",
+  "subtitle": "Manage your team, salaries, and performance.",
+  "stats": {
+    "totalPayroll": "Total Payroll",
+    "payrollTrend": "+2.4% from last month",
+    "activeEmployees": "Active Employees",
+    "onLeaveCount": "2 on leave",
+    "avgPerformance": "Avg. Performance",
+    "performanceTrend": "Top tier productivity"
+  },
+  "sections": {
+    "teamOverview": "Team Overview"
+  },
+  "employee": {
+    "performanceScore": "Performance Score",
+    "email": "Email"
+  }
+}

@@ -1,0 +1,12 @@
+{
+  "common": {
+    "search": "Search employees...",
+    "viewAll": "View All",
+    "active": "Active",
+    "onLeave": "On Leave",
+    "details": "Details",
+    "netMonthly": "Net Monthly",
+    "viewProfile": "View Profile",
+    "hrAdmin": "HR Admin"
+  }
+}

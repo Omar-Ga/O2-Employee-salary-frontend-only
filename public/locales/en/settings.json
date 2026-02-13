@@ -1,0 +1,62 @@
+{
+  "title": "Settings",
+  "subtitle": "Manage your organization's structure, data policies, and system preferences.",
+  "navigation": {
+    "organization": "Organization",
+    "dataManagement": "Data Management",
+    "system": "System",
+    "departments": "Manage Departments",
+    "users": "Manage Users",
+    "export": "Data Export",
+    "import": "Data Import",
+    "preferences": "Preferences",
+    "about": "About O2mation"
+  },
+  "preferences": {
+    "title": "Preferences",
+    "subtitle": "Customize your workspace to fit your needs.",
+    "language": {
+      "title": "Language & Region",
+      "subtitle": "Manage your interface language and regional settings",
+      "interfaceLabel": "Interface Language",
+      "description": "Select the language you want to use for the user interface. This setting will be saved to your browser.",
+      "english": "English",
+      "arabic": "Arabic",
+      "us": "United States",
+      "ar": "العربية"
+    },
+    "moreComingSoon": "More settings coming soon..."
+  },
+  "export": {
+    "title": "Data Export",
+    "description": "Export your employee data and payroll reports in various formats.",
+    "options": {
+      "payslips": {
+        "title": "Payslips (PDF)",
+        "desc": "Generate printable payslips for all employees for the current month."
+      },
+      "csv": {
+        "title": "Raw Data (CSV)",
+        "desc": "Export raw employee and payroll data for external analysis."
+      },
+      "excel": {
+        "title": "Excel Report",
+        "desc": "Detailed payroll report formatted for Microsoft Excel."
+      }
+    }
+  },
+  "import": {
+    "title": "Data Import",
+    "description": "Import employee data from CSV files.",
+    "dropzone": {
+      "title": "Click to upload or drag and drop",
+      "subtitle": "CSV files only (max. 10MB)",
+      "support": "Supported format: .csv"
+    },
+    "button": "Select File"
+  },
+  "footer": {
+    "appName": "O2mation Salary",
+    "version": "v1.0.0 (Beta)"
+  }
+}

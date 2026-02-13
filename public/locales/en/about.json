@@ -1,0 +1,24 @@
+{
+  "title": "Company Profile",
+  "subtitle": "Revolutionizing payroll and employee management with intelligent automation and avant-garde design.",
+  "companyName": "O2mation",
+  "sections": {
+    "contact": "Contact Information",
+    "legal": "Legal & Registration"
+  },
+  "fields": {
+    "email": "Email Address",
+    "phone": "Phone Number",
+    "headquarters": "Headquarters",
+    "taxId": "Tax ID / EIN",
+    "registration": "Registration Number",
+    "license": "License Key"
+  },
+  "actions": {
+    "copy": "Copied to clipboard",
+    "copySuccess": "{{label}} has been copied."
+  },
+  "values": {
+    "headquarters": "123 Innovation Dr, Tech City, TC 90210"
+  }
+}

@@ -1,0 +1,78 @@
+{
+  "tabs": {
+    "run": "التشغيل الحالي",
+    "history": "السجل"
+  },
+  "run": {
+    "closeMonth": "إغلاق الشهر وإنشاء القسائم",
+    "table": {
+      "employee": "الموظف",
+      "basic": "الأساسي",
+      "additions": "الإضافات",
+      "deductions": "الخصومات",
+      "netSalary": "صافي الراتب",
+      "manage": "إدارة"
+    },
+    "toast": {
+      "monthClosed": "تم إغلاق الشهر وإنشاء القسائم",
+      "transactionAdded": "تم إضافة المعاملة"
+    }
+  },
+  "history": {
+    "empty": "لا يوجد سجل رواتب بعد.",
+    "closed": "مغلق",
+    "totalPayout": "إجمالي المدفوعات"
+  },
+  "dialog": {
+    "title": "إضافة معاملة لـ {{name}}",
+    "titleBulk": "إضافة معاملة لـ {{count}} موظفين",
+    "category": "الفئة",
+    "unit": "الوحدة",
+    "value": "القيمة ({{unit}})",
+    "reason": "السبب",
+    "reasonPlaceholder": "مثال: تأخير، غياب...",
+    "selectType": "اختر نوع المعاملة",
+    "entryAmount": "القيمة المدخلة",
+    "preview": {
+      "increase": "زيادة بمقدار {{amount}}",
+      "decrease": "نقصان بمقدار {{amount}}",
+      "baseRate": "بناءً على سعر الساعة {{rate}}",
+      "bulk": "{{action}} {{amount}} {{unit}} لكل موظف"
+    },
+    "cancel": "إلغاء",
+    "save": "حفظ المعاملة",
+    "activeTransactions": "السجل النشط",
+    "noTransactions": "لا توجد معاملات في الدورة الحالية",
+    "toast": {
+      "added": "تم إضافة المعاملة",
+      "bulkAdded": "تم إضافة المعاملة لـ {{count}} موظفين",
+      "removed": "تمت إزالة المعاملة"
+    }
+  },
+  "preview": {
+    "currentSalary": "الشهر الحالي",
+    "baseSalary": "الراتب الأساسي",
+    "projectedNet": "الصافي المتوقع",
+    "afterDeductions": "بعد كل التسويات",
+    "totalAdditions": "إجمالي الإضافات",
+    "totalDeductions": "إجمالي الخصومات",
+    "hourlyRate": "سعر الساعة",
+    "bulkSummary": "إضافة {{category}} لـ {{count}} موظفين",
+    "impactDescription": "احتساب {{amount}} {{unit}} من {{category}}"
+  },
+  "categories": {
+    "additions": "الإضافات",
+    "deductions": "الخصومات",
+    "overtime": "وقت إضافي",
+    "bonus": "مكافأة",
+    "absence": "غياب",
+    "lateness": "تأخير",
+    "advance": "سلفة (قرض)",
+    "deduction": "خصم"
+  },
+  "units": {
+    "hours": "ساعات",
+    "days": "أيام",
+    "cash": "مبلغ نقدي"
+  }
+}

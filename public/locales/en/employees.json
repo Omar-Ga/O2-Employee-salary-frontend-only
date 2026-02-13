@@ -1,0 +1,71 @@
+{
+  "actions": {
+    "addEmployee": "Add Employee",
+    "restore": "Restore",
+    "archive": "Archive",
+    "create": "Create Employee",
+    "selectDepartment": "Select Department"
+  },
+  "drawer": {
+    "title": "Add New Employee"
+  },
+  "tabs": {
+    "active": "Active Employees",
+    "archived": "Archived"
+  },
+  "table": {
+    "name": "Name",
+    "department": "Department",
+    "grade": "Grade",
+    "salary": "Salary",
+    "status": "Status",
+    "actions": "Actions"
+  },
+  "bulk": {
+    "selected": "{{count}} Selected",
+    "addTransaction": "Add Transaction",
+    "clear": "Clear Selection"
+  },
+  "form": {
+    "fullName": "Full Name",
+    "email": "Email Address",
+    "phone": "Phone Number",
+    "department": "Department",
+    "workHours": "Work Hours",
+    "nationalId": "ID (National ID)",
+    "monthlySalary": "Monthly Salary",
+    "jobTitle": "Job Title",
+    "scores": {
+      "title": "Grading Scores (0-100)",
+      "performance": "Performance",
+      "dedication": "Dedication",
+      "responsibility": "Responsibility"
+    }
+  },
+  "toast": {
+    "archived": "Employee archived",
+    "restored": "Employee restored",
+    "created": "Employee created"
+  },
+  "status": {
+    "active": "Active",
+    "archived": "Archived"
+  },
+  "grades": {
+    "excellent": "Excellent",
+    "good": "Good",
+    "bad": "Bad"
+  },
+  "departments": {
+    "engineering": "Engineering",
+    "finance": "Finance",
+    "humanResources": "Human Resources",
+    "frontend": "Frontend",
+    "backend": "Backend",
+    "qualityAssurance": "Quality Assurance",
+    "accounting": "Accounting",
+    "auditing": "Auditing",
+    "recruitment": "Recruitment",
+    "operations": "Operations"
+  }
+}

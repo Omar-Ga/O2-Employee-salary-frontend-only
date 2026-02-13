@@ -1,0 +1,71 @@
+{
+  "actions": {
+    "addEmployee": "إضافة موظف",
+    "restore": "استعادة",
+    "archive": "أرشفة",
+    "create": "إنشاء موظف",
+    "selectDepartment": "اختر القسم"
+  },
+  "drawer": {
+    "title": "إضافة موظف جديد"
+  },
+  "tabs": {
+    "active": "الموظفين النشطين",
+    "archived": "المؤرشفين"
+  },
+  "table": {
+    "name": "الاسم",
+    "department": "القسم",
+    "grade": "الدرجة",
+    "salary": "الراتب",
+    "status": "الحالة",
+    "actions": "إجراءات"
+  },
+  "bulk": {
+    "selected": "{{count}} محدد",
+    "addTransaction": "إضافة معاملة",
+    "clear": "إلغاء التحديد"
+  },
+  "form": {
+    "fullName": "الاسم الكامل",
+    "email": "البريد الإلكتروني",
+    "phone": "رقم الهاتف",
+    "department": "القسم",
+    "workHours": "ساعات العمل",
+    "nationalId": "الرقم القومي",
+    "monthlySalary": "الراتب الشهري",
+    "jobTitle": "المسمى الوظيفي",
+    "scores": {
+      "title": "نقاط التقييم (0-100)",
+      "performance": "الأداء",
+      "dedication": "التفاني",
+      "responsibility": "المسؤولية"
+    }
+  },
+  "toast": {
+    "archived": "تم أرشفة الموظف",
+    "restored": "تم استعادة الموظف",
+    "created": "تم إنشاء الموظف"
+  },
+  "status": {
+    "active": "نشط",
+    "archived": "مؤرشف"
+  },
+  "grades": {
+    "excellent": "ممتاز",
+    "good": "جيد",
+    "bad": "سيء"
+  },
+  "departments": {
+    "engineering": "هندسة",
+    "finance": "مالية",
+    "humanResources": "الموارد البشرية",
+    "frontend": "واجهة أمامية",
+    "backend": "خلفية",
+    "qualityAssurance": "ضمان الجودة",
+    "accounting": "محاسبة",
+    "auditing": "تدقيق",
+    "recruitment": "توظيف",
+    "operations": "عمليات"
+  }
+}

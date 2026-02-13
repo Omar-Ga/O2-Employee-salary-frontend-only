@@ -1,0 +1,78 @@
+{
+  "tabs": {
+    "run": "Current Run",
+    "history": "History"
+  },
+  "run": {
+    "closeMonth": "Close Month & Generate Slips",
+    "table": {
+      "employee": "Employee",
+      "basic": "Basic",
+      "additions": "Additions",
+      "deductions": "Deductions",
+      "netSalary": "Net Salary",
+      "manage": "Manage"
+    },
+    "toast": {
+      "monthClosed": "Month Closed & Slips Generated",
+      "transactionAdded": "Transaction added"
+    }
+  },
+  "history": {
+    "empty": "No payroll history yet.",
+    "closed": "Closed",
+    "totalPayout": "Total Payout"
+  },
+  "dialog": {
+    "title": "Add Transaction for {{name}}",
+    "titleBulk": "Add Transaction to {{count}} Employees",
+    "category": "Category",
+    "unit": "Unit",
+    "value": "Value ({{unit}})",
+    "reason": "Reason",
+    "reasonPlaceholder": "e.g. Late arrival",
+    "selectType": "Select Transaction Type",
+    "entryAmount": "Entry Amount",
+    "preview": {
+      "increase": "Increase by {{amount}}",
+      "decrease": "Decrease by {{amount}}",
+      "baseRate": "Based on hourly rate of {{rate}}",
+      "bulk": "{{action}} {{amount}} {{unit}} for each employee"
+    },
+    "cancel": "Cancel",
+    "save": "Save Transaction",
+    "activeTransactions": "Active History",
+    "noTransactions": "No transactions in current cycle",
+    "toast": {
+      "added": "Transaction added",
+      "bulkAdded": "Added transaction to {{count}} employees",
+      "removed": "Transaction removed"
+    }
+  },
+  "preview": {
+    "currentSalary": "Current Month",
+    "baseSalary": "Original Package",
+    "projectedNet": "Projected Net",
+    "afterDeductions": "After all adjustments",
+    "totalAdditions": "Current Additions",
+    "totalDeductions": "Current Deductions",
+    "hourlyRate": "Hourly Rate",
+    "bulkSummary": "Adding {{category}} to {{count}} employees",
+    "impactDescription": "Calculating {{amount}} {{unit}} of {{category}}"
+  },
+  "categories": {
+    "additions": "Additions",
+    "deductions": "Deductions",
+    "overtime": "Overtime",
+    "bonus": "Bonus",
+    "absence": "Absence",
+    "lateness": "Lateness",
+    "advance": "Advance (Loan)",
+    "deduction": "Deduction"
+  },
+  "units": {
+    "hours": "Hours",
+    "days": "Days",
+    "cash": "Cash Amount"
+  }
+}

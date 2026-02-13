@@ -1,0 +1,15 @@
+{
+  "app": {
+    "subtitle": "الرواتب"
+  },
+  "section": {
+    "main": "القائمة الرئيسية"
+  },
+  "items": {
+    "dashboard": "لوحة التحكم",
+    "employees": "الموظفين",
+    "payroll": "كشوف المرتبات",
+    "recruitment": "التوظيف",
+    "settings": "الإعدادات"
+  }
+}

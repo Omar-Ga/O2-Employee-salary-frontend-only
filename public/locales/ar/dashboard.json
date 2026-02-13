@@ -1,0 +1,19 @@
+{
+  "welcome": "إدارة الموظفين",
+  "subtitle": "إدارة فريقك والرواتب والأداء.",
+  "stats": {
+    "totalPayroll": "إجمالي الرواتب",
+    "payrollTrend": "+2.4% من الشهر الماضي",
+    "activeEmployees": "الموظفون النشطون",
+    "onLeaveCount": "2 في إجازة",
+    "avgPerformance": "متوسط الأداء",
+    "performanceTrend": "إنتاجية عالية"
+  },
+  "sections": {
+    "teamOverview": "نظرة عامة على الفريق"
+  },
+  "employee": {
+    "performanceScore": "نقاط الأداء",
+    "email": "البريد الإلكتروني"
+  }
+}
