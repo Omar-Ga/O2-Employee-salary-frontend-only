@@ -474,7 +474,7 @@ export const TransactionDrawer = ({ open, onOpenChange, employeeIds, onSuccess }
                   </Box>
                 )}
                 {!isBulk && existingTransactions.length === 0 && (
-                  <Text fontSize="sm" color="gray.400" textAlign="center" py="4" borderDash="2px" borderColor="gray.100" borderRadius="xl">
+                  <Text fontSize="sm" color="gray.400" textAlign="center" py="4" borderStyle="dashed" borderWidth="2px" borderColor="gray.100" borderRadius="xl">
                     {t('dialog.noTransactions')}
                   </Text>
                 )}

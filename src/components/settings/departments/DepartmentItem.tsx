@@ -1,19 +1,33 @@
 import { useSortable } from "@dnd-kit/sortable"
 import { CSS } from "@dnd-kit/utilities"
-import { Box, Text, Icon, Badge, HStack, Stack } from "@chakra-ui/react"
-import { LuGripVertical, LuLayoutGrid } from "react-icons/lu"
-import { Department } from "./types"
-import { memo } from "react"
-import { useTranslation } from "react-i18next"
+import { Box, Text, Icon, IconButton, Flex, Input } from "@chakra-ui/react"
+import { LuGripVertical, LuChevronDown, LuChevronRight } from "react-icons/lu"
+import { FlattenedItem } from "./types"
+import { memo, useState, useRef, useEffect } from "react"
 
 interface DepartmentItemProps {
-  department: Department
+  department: FlattenedItem
   depth?: number
   isOverlay?: boolean
+  isCollapsed?: boolean
+  onToggleCollapse?: () => void
+  onRename?: (newName: string) => void
+  color?: string
 }
 
-export const DepartmentItem = memo(({ department, depth = 0, isOverlay }: DepartmentItemProps) => {
-  const { t } = useTranslation('departments')
+export const DepartmentItem = memo(({
+  department,
+  depth = 0,
+  isOverlay,
+  isCollapsed,
+  onToggleCollapse,
+  onRename,
+  color = "gray"
+}: DepartmentItemProps) => {
+  const [isEditing, setIsEditing] = useState(false)
+  const [editValue, setEditValue] = useState(department.name)
+  const inputRef = useRef<HTMLInputElement>(null)
+
   const {
     attributes,
     listeners,
@@ -21,101 +35,150 @@ export const DepartmentItem = memo(({ department, depth = 0, isOverlay }: Depart
     transform,
     transition,
     isDragging,
-  } = useSortable({ id: department.id, data: { type: "department", department } })
+  } = useSortable({
+    id: department.id,
+    data: { type: "department", department },
+    disabled: isEditing
+  })
+
+  useEffect(() => {
+    if (isEditing) {
+      inputRef.current?.focus()
+      inputRef.current?.select()
+    }
+  }, [isEditing])
+
+  const handleDoubleClick = (e: React.MouseEvent) => {
+    if (isOverlay) return
+    e.stopPropagation()
+    setIsEditing(true)
+  }
+
+  const handleBlur = () => {
+    setIsEditing(false)
+    if (editValue.trim() && editValue !== department.name) {
+      onRename?.(editValue.trim())
+    } else {
+      setEditValue(department.name)
+    }
+  }
+
+  const handleKeyDown = (e: React.KeyboardEvent) => {
+    if (e.key === 'Enter') {
+      inputRef.current?.blur()
+    } else if (e.key === 'Escape') {
+      setEditValue(department.name)
+      setIsEditing(false)
+    }
+  }
+
+  const isParent = depth === 0
+  // Parents get their unique color; children are always silver/gray
+  const accentColor = isParent ? color : "gray"
 
   const style = {
     transform: CSS.Transform.toString(transform),
     transition,
     opacity: isDragging ? 0.4 : 1,
-    marginLeft: `${depth * 32}px`, // Use 32px to match INDENTATION_WIDTH in parent
+    marginLeft: depth === 0 ? 0 : `${depth * 28}px`,
     position: "relative" as const,
     zIndex: isDragging ? 999 : "auto",
+    marginBottom: "4px",
   }
 
+  const hasChildren = department.childCount > 0
+
   return (
-    <Box
-      ref={setNodeRef}
-      style={style}
-      {...attributes}
-      mb={2}
-    >
-      <Box
-        bg={isOverlay ? "white" : "white"}
-        p={3}
+    <Box ref={setNodeRef} style={style} {...attributes}>
+      <Flex
+        bg={isParent ? "white" : "gray.50"}
+        py={isParent ? "10px" : "7px"}
+        px={3}
         borderRadius="md"
-        borderWidth="1px"
-        borderColor={isDragging ? "oxygen.500" : "gray.200"}
-        shadow={isOverlay ? "lg" : "sm"}
-        _hover={{ borderColor: "oxygen.400", shadow: "md" }}
-        transition="all 0.2s"
-        position="relative"
-        role="group"
+        border="1px solid"
+        borderColor={isDragging ? `${accentColor}.400` : (isParent ? "gray.200" : "gray.200")}
+        borderLeftWidth="3px"
+        borderLeftColor={`${accentColor}.${isParent ? '500' : '200'}`}
+        boxShadow={isDragging ? "md" : (isParent ? "sm" : "none")}
+        _hover={{ borderColor: `${accentColor}.300`, boxShadow: "sm" }}
+        align="center"
+        gap={2}
+        transition="all 0.15s"
+        onDoubleClick={handleDoubleClick}
       >
-        <HStack gap={3}>
-          {/* Drag Handle */}
-          <Box 
-            {...listeners} 
-            cursor="grab" 
-            color="gray.400" 
-            _hover={{ color: "gray.600" }}
-            _active={{ cursor: "grabbing" }}
+        {/* Drag Handle */}
+        <Box
+          {...listeners}
+          cursor="grab"
+          color="gray.400"
+          _hover={{ color: "gray.600" }}
+          _active={{ cursor: "grabbing" }}
+          display="flex"
+          alignItems="center"
+        >
+          <Icon as={LuGripVertical} boxSize={4} />
+        </Box>
+
+        {/* Name */}
+        {isEditing ? (
+          <Input
+            ref={inputRef}
+            size="sm"
+            value={editValue}
+            onChange={(e) => setEditValue(e.target.value)}
+            onBlur={handleBlur}
+            onKeyDown={handleKeyDown}
+            variant="outline"
+            bg="white"
+            h="24px"
+            flex={1}
+            autoFocus
+          />
+        ) : (
+          <Text
+            fontWeight={isParent ? "semibold" : "normal"}
+            fontSize="sm"
+            color={isParent ? "gray.800" : "gray.600"}
+            flex={1}
+            lineHeight="1.3"
+            userSelect="none"
           >
-            <Icon as={LuGripVertical} boxSize={5} />
-          </Box>
+            {department.name}
+          </Text>
+        )}
 
-          {/* Icon */}
-          <Box 
-            p={2} 
-            bg="oxygen.50" 
-            color="oxygen.600" 
-            borderRadius="md"
-          >
-            <Icon as={LuLayoutGrid} boxSize={4} />
-          </Box>
+        {/* Child count for parents */}
+        {hasChildren && (
+          <Text fontSize="xs" color="gray.400" mr={1}>
+            {department.childCount}
+          </Text>
+        )}
 
-          {/* Content */}
-          <Stack gap={0} flex={1}>
-            <Text fontWeight="semibold" fontSize="sm" color="gray.800">
-              {department.name}
-            </Text>
-            {/* Show hierarchy info instead of type */}
-            <Text fontSize="xs" color="gray.500">
-               {department.children?.length > 0 ? t('item.parentUnit') : t('item.department')}
-            </Text>
-          </Stack>
+        {/* Actions Group */}
+        <Flex gap={1} align="center">
 
-          {/* Hierarchy Indicator */}
-          {department.children?.length > 0 && (
-             <Badge variant="subtle" colorPalette="gray" size="sm">
-               {t('item.subUnits', { count: department.children.length })}
-             </Badge>
+
+          {/* Collapse Action */}
+          {hasChildren && !isOverlay && (
+            <IconButton
+              variant="ghost"
+              size="xs"
+              aria-label="Toggle collapse"
+              onClick={(e) => {
+                e.stopPropagation()
+                onToggleCollapse?.()
+              }}
+              color="gray.400"
+              _hover={{ bg: "gray.100", color: "gray.600" }}
+              minW="auto"
+              h="auto"
+              p={0.5}
+            >
+              <Icon as={isCollapsed ? LuChevronRight : LuChevronDown} boxSize={4} />
+            </IconButton>
           )}
-        </HStack>
-      </Box>
-      
-      {/* Connector Lines for visual hierarchy */}
-      {depth > 0 && !isOverlay && (
-        <>
-          <Box 
-            position="absolute"
-            left="-32px"
-            top="50%"
-            width="32px"
-            height="1px"
-            bg="gray.300"
-            zIndex={-1}
-          />
-           <Box 
-            position="absolute"
-            left="-32px"
-            top="-12px" 
-            bottom="50%"
-            width="1px"
-            bg="gray.300"
-            zIndex={-1}
-          />
-        </>
-      )}
+        </Flex>
+      </Flex>
     </Box>
   )
 })

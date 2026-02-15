@@ -9,7 +9,7 @@
     "dragToAdd": "Drag to Add",
     "instructions": {
       "title": "Instructions",
-      "step1": "Drag "New Department" to the list.",
+      "step1": "Drag \"New Department\" to the list.",
       "step2": "Drag right to indent (make it a child).",
       "step3": "Drag left to un-indent."
     }
