@@ -10,7 +10,6 @@ lerna-debug.log*
 node_modules
 dist
 dist-ssr
-*.local
 
 # Editor directories and files
 .vscode/*
@@ -23,6 +22,5 @@ dist-ssr
 *.sln
 *.sw?
 
-# Gemini / Trae specific (optional, keeping them for now unless asked)
-#.gemini/
-#.trae/
+
+
