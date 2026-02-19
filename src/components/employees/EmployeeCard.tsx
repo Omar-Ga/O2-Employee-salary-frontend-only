@@ -17,13 +17,13 @@ interface EmployeeCardProps {
   onClick?: () => void
 }
 
-export const EmployeeCard = ({ 
-  employee, 
-  isSelected, 
-  onSelect, 
-  onEdit, 
-  onArchive, 
-  onRestore, 
+export const EmployeeCard = ({
+  employee,
+  isSelected,
+  onSelect,
+  onEdit,
+  onArchive,
+  onRestore,
   onDelete,
   onClick
 }: EmployeeCardProps) => {
@@ -37,10 +37,10 @@ export const EmployeeCard = ({
   }[employee.grade || 'Good'] || 'gray'
 
   return (
-    <Box 
-      bg="white" 
-      borderRadius="lg" 
-      borderWidth="1px" 
+    <Box
+      bg="white"
+      borderRadius="lg"
+      borderWidth="1px"
       borderColor={isSelected ? "oxygen.500" : "gray.200"}
       shadow={isSelected ? "md" : "sm"}
       transition="all 0.2s"
@@ -53,88 +53,88 @@ export const EmployeeCard = ({
       cursor="pointer"
     >
       <Grid templateColumns={{ base: "auto 1fr auto", md: "auto 250px 1fr 1fr auto auto" }} gap="4" alignItems="center">
-        
+
         {/* 1. Checkbox */}
         <GridItem onClick={(e) => e.stopPropagation()}>
-            <Checkbox 
-                checked={isSelected} 
-                onCheckedChange={(e) => onSelect(!!e.checked)} 
-                size="md"
-                colorPalette="oxygen"
-            />
+          <Checkbox
+            checked={isSelected}
+            onCheckedChange={(e) => onSelect(!!e.checked)}
+            size="md"
+            colorPalette="oxygen"
+          />
         </GridItem>
 
         {/* 2. Name & Title */}
         <GridItem>
-            <Box>
-                <Text fontWeight="bold" fontSize="sm">{employee.name}</Text>
-                <Text fontSize="xs" color="gray.500">{employee.jobTitle}</Text>
-            </Box>
+          <Box>
+            <Text fontWeight="bold" fontSize="sm">{employee.name}</Text>
+            <Text fontSize="xs" color="gray.500">{employee.jobTitle}</Text>
+          </Box>
         </GridItem>
 
         {/* 3. Department & Grade */}
         <GridItem display={{ base: "none", md: "block" }}>
-             <HStack gap="2">
-                 <Badge variant="subtle" colorPalette={departmentColor} size="sm">
-                   {employee.department}
-                 </Badge>
-                 {employee.grade && (
-                   <Badge variant="outline" colorPalette={gradeColor} size="sm">
-                     {employee.grade}
-                   </Badge>
-                 )}
-             </HStack>
+          <HStack gap="2">
+            <Badge variant="subtle" colorPalette={departmentColor} size="sm">
+              {t(`departments.${employee.department}`, { defaultValue: employee.department })}
+            </Badge>
+            {employee.grade && (
+              <Badge variant="outline" colorPalette={gradeColor} size="sm">
+                {t(`grades.${employee.grade.toLowerCase()}`, { defaultValue: employee.grade })}
+              </Badge>
+            )}
+          </HStack>
         </GridItem>
 
         {/* 4. Salary */}
         <GridItem display={{ base: "none", md: "block" }}>
-            <Text fontWeight="semibold" color="gray.700" fontSize="sm">
-             {formatCurrency(employee.monthlySalary)}
-           </Text>
+          <Text fontWeight="semibold" color="gray.700" fontSize="sm">
+            {formatCurrency(employee.monthlySalary)}
+          </Text>
         </GridItem>
 
         {/* 5. Status Indicator */}
         <GridItem>
-             <Badge 
-                size="sm" 
-                variant="solid" 
-                colorPalette={employee.isArchived ? "gray" : "green"}
-             >
-                 {employee.isArchived ? "Archived" : "Active"}
-             </Badge>
+          <Badge
+            size="sm"
+            variant="solid"
+            colorPalette={employee.isArchived ? "gray" : "green"}
+          >
+            {employee.isArchived ? t('status.archived') : t('status.active')}
+          </Badge>
         </GridItem>
 
         {/* 6. Actions */}
         <GridItem onClick={(e) => e.stopPropagation()}>
-            <Menu.Root>
+          <Menu.Root>
             <Menu.Trigger asChild>
-                <IconButton variant="ghost" size="xs" aria-label="Actions" color="gray.400" _hover={{ color: "gray.700", bg: "gray.100" }}>
+              <IconButton variant="ghost" size="xs" aria-label="Actions" color="gray.400" _hover={{ color: "gray.700", bg: "gray.100" }}>
                 <LuEllipsis />
-                </IconButton>
+              </IconButton>
             </Menu.Trigger>
             <Menu.Positioner>
-                <Menu.Content>
+              <Menu.Content>
                 <Menu.Item value="edit" onClick={onEdit}>
-                    <LuPencil /> {t('actions.edit')}
+                  <LuPencil /> {t('actions.edit')}
                 </Menu.Item>
                 {employee.isArchived ? (
-                    <>
+                  <>
                     <Menu.Item value="restore" onClick={onRestore}>
-                        <LuUndo /> {t('actions.restore')}
+                      <LuUndo /> {t('actions.restore')}
                     </Menu.Item>
                     <Menu.Separator />
                     <Menu.Item value="delete" color="red.500" onClick={onDelete}>
-                        <LuTrash2 /> {t('actions.delete')}
+                      <LuTrash2 /> {t('actions.delete')}
                     </Menu.Item>
-                    </>
+                  </>
                 ) : (
-                    <Menu.Item value="archive" color="red.500" onClick={onArchive}>
+                  <Menu.Item value="archive" color="red.500" onClick={onArchive}>
                     <LuArchive /> {t('actions.archive')}
-                    </Menu.Item>
+                  </Menu.Item>
                 )}
-                </Menu.Content>
+              </Menu.Content>
             </Menu.Positioner>
-            </Menu.Root>
+          </Menu.Root>
         </GridItem>
 
       </Grid>

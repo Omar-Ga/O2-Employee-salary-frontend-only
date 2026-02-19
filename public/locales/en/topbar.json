@@ -1,0 +1,9 @@
+{
+    "search": "Search employees...",
+    "profile": {
+        "viewProfile": "View Profile",
+        "hrAdmin": "HR Admin",
+        "settings": "Profile Settings",
+        "logout": "Log out"
+    }
+}

@@ -1,91 +1,39 @@
-export interface Employee {
-  id: string
-  name: string
-  email: string
-  nationalId: string
-  phone: string
-  jobTitle: string
-  department: string // ID
-  monthlySalary: number
-  workHours: number
-  isArchived: boolean
-  grade?: 'Excellent' | 'Good' | 'Bad'
-  scores?: {
-    performance: number
-    dedication: number
-    responsibility: number
-  }
+import {
+  EmployeesResponse,
+  DepartmentsResponse,
+  TransactionsResponse,
+  PayrollRunsResponse,
+  PayrollSlipsResponse,
+  UsersResponse,
+  UsersRecord
+} from './pocketbase-types-manual'
+
+export type {
+  EmployeesResponse,
+  DepartmentsResponse,
+  TransactionsResponse,
+  PayrollRunsResponse,
+  PayrollSlipsResponse,
+  UsersResponse,
+  UsersRecord
 }
 
-export interface Department {
-  id: string
-  name: string
-  parentId?: string
-  type: 'structural' | 'functional'
-}
+export type Employee = EmployeesResponse
 
-export type TransactionType = 'addition' | 'deduction'
+export type Department = DepartmentsResponse
 
-export type TransactionCategory = 'overtime' | 'deduction' | 'bonus' | 'advance'
+export type Transaction = TransactionsResponse
 
-// Base Transaction
-interface BaseTransaction {
-  id: string
-  employeeId: string
-  date: string
-  isClosed: boolean
-}
+export type TransactionType = Transaction['type']
+export type TransactionCategory = Transaction['category']
 
-// 1. Overtime: Addition, Time-based
-export interface OvertimeTransaction extends BaseTransaction {
-  category: 'overtime'
-  type: 'addition'
-  unit: 'hours' | 'days'
-  amount: number // e.g., 2 hours
-}
-
-// 2. Deduction: Deduction, Time-based (Absence/Lateness)
-export interface DeductionTransaction extends BaseTransaction {
-  category: 'deduction' // Covers Absence/Lateness
-  type: 'deduction'
-  unit: 'hours' | 'days'
-  amount: number
-  reason?: string // Optional: "Lateness", "Absence"
-}
-
-// 3. Bonus: Addition, Cash-based
-export interface BonusTransaction extends BaseTransaction {
-  category: 'bonus'
-  type: 'addition'
-  unit: 'cash'
-  amount: number // e.g., 1000 EGP
-}
-
-// 4. Advance: Deduction, Cash-based
-export interface AdvanceTransaction extends BaseTransaction {
-  category: 'advance'
-  type: 'deduction'
-  unit: 'cash'
-  amount: number
-}
-
-export type Transaction = OvertimeTransaction | DeductionTransaction | BonusTransaction | AdvanceTransaction
-
-export interface PayrollRun {
-  id: string // Month-Year e.g. "2023-10"
-  date: string
-  isClosed: boolean
+export type PayrollRun = Omit<PayrollRunsResponse, 'slips'> & {
   slips: PayrollSlip[]
 }
 
-export interface PayrollSlip {
-  employeeId: string
-  employeeName: string
-  department: string
-  basicSalary: number
-  hourlyRate: number
-  additions: number
-  deductions: number
-  netSalary: number
+export type PayrollSlip = Omit<PayrollSlipsResponse, 'transactions'> & {
   transactions: Transaction[]
+  employeeName?: string // Optional helper from frontend
 }
+
+export type User = UsersResponse

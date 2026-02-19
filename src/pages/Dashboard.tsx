@@ -1,13 +1,18 @@
 import { Box, Heading, HStack, SimpleGrid, Card as ChakraCard, Badge, Flex, Icon, Text } from "@chakra-ui/react"
+import { useQuery } from "@tanstack/react-query"
 import { useTranslation } from "react-i18next"
 import { employeeService } from "@/services/employee.service"
 import { LuWallet, LuUsers, LuTrendingUp } from "react-icons/lu"
 import { formatCurrency } from "@/lib/utils"
 
 export const Dashboard = () => {
-  const { t } = useTranslation(['dashboard', 'translation'])
-  const employees = employeeService.getAll()
-  
+  const { t } = useTranslation(['dashboard'])
+  const { data: employees = [] } = useQuery({
+    queryKey: ['employees'],
+    queryFn: employeeService.getAll,
+    select: (data) => data as unknown as import("@/types").Employee[]
+  })
+
   const totalPayroll = employees.reduce((sum, emp) => sum + emp.monthlySalary, 0)
   const activeCount = employees.filter(e => !e.isArchived).length
   // Mock average performance
@@ -21,25 +26,25 @@ export const Dashboard = () => {
       </Box>
 
       <SimpleGrid columns={{ base: 1, md: 3 }} gap="6">
-        <StatCard 
-          label={t('stats.totalPayroll')} 
-          value={formatCurrency(totalPayroll)} 
-          helpText={t('stats.payrollTrend')} 
+        <StatCard
+          label={t('stats.totalPayroll')}
+          value={formatCurrency(totalPayroll)}
+          helpText={t('stats.payrollTrend')}
           icon={LuWallet}
           trend="up"
           trendColor="green"
         />
-        <StatCard 
-          label={t('stats.activeEmployees')} 
-          value={activeCount} 
-          helpText={t('stats.onLeaveCount')} 
+        <StatCard
+          label={t('stats.activeEmployees')}
+          value={activeCount}
+          helpText={t('stats.onLeaveCount')}
           icon={LuUsers}
           trendColor="gray"
         />
-        <StatCard 
-          label={t('stats.avgPerformance')} 
-          value={`${avgPerformance}%`} 
-          helpText={t('stats.performanceTrend')} 
+        <StatCard
+          label={t('stats.avgPerformance')}
+          value={`${avgPerformance}%`}
+          helpText={t('stats.performanceTrend')}
           icon={LuTrendingUp}
           trend="up"
           trendColor="green"
@@ -49,9 +54,9 @@ export const Dashboard = () => {
       <Box>
         <HStack justify="space-between" mb="6">
           <Heading size="lg">{t('sections.teamOverview')}</Heading>
-          <Text color="oxygen.500" fontWeight="bold" cursor="pointer" _hover={{ textDecor: "underline" }}>{t('translation:common.viewAll')}</Text>
+          <Text color="oxygen.500" fontWeight="bold" cursor="pointer" _hover={{ textDecor: "underline" }}>{t('viewAll')}</Text>
         </HStack>
-        
+
         <HStack overflowX="auto" gap="6" pb="4" css={{ '&::-webkit-scrollbar': { display: 'none' } }}>
           {employees.slice(0, 5).map(emp => (
             <EmployeeCard key={emp.id} employee={emp} />
@@ -67,14 +72,14 @@ const StatCard = ({ label, value, helpText, icon, trendColor }: any) => (
     <ChakraCard.Body>
       <Flex justify="space-between" align="start">
         <Box>
-           <Text color="gray.500" fontWeight="medium" mb="2">{label}</Text>
-           <Text fontSize="4xl" fontWeight="bold" letterSpacing="tight" lineHeight="1" mb="2">{value}</Text>
-           <Text fontSize="sm" color={trendColor === 'green' ? "oxygen.600" : "gray.500"} fontWeight="medium">
+          <Text color="gray.500" fontWeight="medium" mb="2">{label}</Text>
+          <Text fontSize="4xl" fontWeight="bold" letterSpacing="tight" lineHeight="1" mb="2">{value}</Text>
+          <Text fontSize="sm" color={trendColor === 'green' ? "oxygen.600" : "gray.500"} fontWeight="medium">
             {helpText}
-           </Text>
+          </Text>
         </Box>
         <Box p="3" bg={trendColor === 'green' ? "oxygen.50" : "gray.50"} borderRadius="xl">
-           <Icon as={icon} boxSize="6" color={trendColor === 'green' ? "oxygen.600" : "gray.500"} />
+          <Icon as={icon} boxSize="6" color={trendColor === 'green' ? "oxygen.600" : "gray.500"} />
         </Box>
       </Flex>
     </ChakraCard.Body>
@@ -82,7 +87,7 @@ const StatCard = ({ label, value, helpText, icon, trendColor }: any) => (
 )
 
 const EmployeeCard = ({ employee }: any) => {
-  const { t } = useTranslation(['dashboard', 'translation'])
+  const { t } = useTranslation(['dashboard'])
   return (
     <ChakraCard.Root minW="340px" shadow="sm" borderRadius="2xl" border="1px solid" borderColor="gray.100" overflow="hidden" bg="white">
       <ChakraCard.Body p="6">
@@ -91,19 +96,19 @@ const EmployeeCard = ({ employee }: any) => {
             <Text fontWeight="bold" fontSize="lg" lineHeight="1.2">{employee.name}</Text>
             <Text color="gray.500" fontSize="sm">{employee.jobTitle}</Text>
           </Box>
-          <Badge 
-            colorPalette={employee.isArchived ? "orange" : "green"} 
-            variant="subtle" 
-            borderRadius="md" 
-            px="2.5" 
+          <Badge
+            colorPalette={employee.isArchived ? "orange" : "green"}
+            variant="subtle"
+            borderRadius="md"
+            px="2.5"
             py="0.5"
             fontSize="xs"
             fontWeight="bold"
           >
-            {employee.isArchived ? t('translation:common.onLeave') : t('translation:common.active')}
+            {employee.isArchived ? t('onLeave') : t('active')}
           </Badge>
         </Flex>
-        
+
         <Box mb="6">
           <HStack justify="space-between" mb="2">
             <Text fontSize="xs" fontWeight="bold" color="gray.400">{t('employee.performanceScore')}</Text>
@@ -115,24 +120,24 @@ const EmployeeCard = ({ employee }: any) => {
         </Box>
 
         <Box p="4" borderRadius="xl" border="1px solid" borderColor="oxygen.200" bg="white">
-          <Text fontSize="xs" color="gray.500" mb="1">{t('translation:common.netMonthly')}</Text>
+          <Text fontSize="xs" color="gray.500" mb="1">{t('netMonthly')}</Text>
           <Flex justify="space-between" align="center">
             <Text fontSize="xl" fontWeight="bold" letterSpacing="tight">{formatCurrency(employee.monthlySalary)}</Text>
             <Box p="2" bg="oxygen.50" borderRadius="lg">
-               <Icon as={LuWallet} color="oxygen.600" boxSize="4" />
+              <Icon as={LuWallet} color="oxygen.600" boxSize="4" />
             </Box>
           </Flex>
         </Box>
-        
+
         <Flex justify="space-between" align="center" mt="6">
-            <HStack gap="2" color="gray.400" fontSize="xs">
-                <Icon as={LuUsers} />
-                <Text>{t('employee.email')}</Text>
-            </HStack>
-            <HStack gap="1" color="gray.400" fontSize="xs" cursor="pointer" _hover={{ color: "oxygen.600" }}>
-                <Text>{t('translation:common.details')}</Text>
-                <Icon as={LuTrendingUp} />
-            </HStack>
+          <HStack gap="2" color="gray.400" fontSize="xs">
+            <Icon as={LuUsers} />
+            <Text>{t('employee.email')}</Text>
+          </HStack>
+          <HStack gap="1" color="gray.400" fontSize="xs" cursor="pointer" _hover={{ color: "oxygen.600" }}>
+            <Text>{t('details')}</Text>
+            <Icon as={LuTrendingUp} />
+          </HStack>
         </Flex>
       </ChakraCard.Body>
     </ChakraCard.Root>

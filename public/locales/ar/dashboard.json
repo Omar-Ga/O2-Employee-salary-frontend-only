@@ -12,6 +12,11 @@
   "sections": {
     "teamOverview": "نظرة عامة على الفريق"
   },
+  "viewAll": "عرض الكل",
+  "active": "نشط",
+  "onLeave": "في إجازة",
+  "details": "التفاصيل",
+  "netMonthly": "الصافي الشهري",
   "employee": {
     "performanceScore": "نقاط الأداء",
     "email": "البريد الإلكتروني"

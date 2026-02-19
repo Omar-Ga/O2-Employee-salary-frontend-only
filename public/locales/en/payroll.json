@@ -21,7 +21,8 @@
   "history": {
     "empty": "No payroll history yet.",
     "closed": "Closed",
-    "totalPayout": "Total Payout"
+    "totalPayout": "Total Payout",
+    "loading": "Loading history..."
   },
   "dialog": {
     "title": "Add Transaction for {{name}}",
@@ -47,6 +48,9 @@
       "added": "Transaction added",
       "bulkAdded": "Added transaction to {{count}} employees",
       "removed": "Transaction removed"
+    },
+    "actions": {
+      "delete": "Delete"
     }
   },
   "preview": {

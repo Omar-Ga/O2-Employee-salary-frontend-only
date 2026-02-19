@@ -1,18 +1,23 @@
 {
   "title": "Organization Hierarchy",
+  "subtitle": "Manage your organization structure",
   "save": "Save Changes",
-  "emptyState": "Drag departments here from the palette",
-  "palette": {
-    "title": "Palette",
-    "subtitle": "Drag to add new units",
-    "newItem": "New Department",
-    "dragToAdd": "Drag to Add",
-    "instructions": {
-      "title": "Instructions",
-      "step1": "Drag \"New Department\" to the list.",
-      "step2": "Drag right to indent (make it a child).",
-      "step3": "Drag left to un-indent."
-    }
+  "newItem": "New Department",
+  "emptyState": {
+    "title": "Drag departments here from the palette",
+    "subtitle": "Click '+' or here to add a department"
+  },
+  "actions": {
+    "expandAll": "Expand All",
+    "collapseAll": "Collapse All",
+    "addDepartment": "Add Department"
+  },
+  "deleteDialog": {
+    "title": "Delete Department",
+    "description": "This department has sub-departments. How do you want to proceed?",
+    "cancel": "Cancel",
+    "keepChildren": "Keep sub-departments",
+    "deleteAll": "Delete all"
   },
   "item": {
     "department": "Department",

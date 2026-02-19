@@ -320,18 +320,18 @@ export const DepartmentsTab = () => {
         <Box mb={4} display="flex" justifyContent="space-between" alignItems="center">
           <Box>
             <Heading size="md" color="gray.700">{t('title')}</Heading>
-            <Text fontSize="sm" color="gray.500">Manage your organization structure</Text>
+            <Text fontSize="sm" color="gray.500">{t('subtitle')}</Text>
           </Box>
           <Box display="flex" gap={2}>
-            <Button size="xs" variant="outline" onClick={handleExpandAll}>Expand All</Button>
-            <Button size="xs" variant="outline" onClick={handleCollapseAll}>Collapse All</Button>
+            <Button size="xs" variant="outline" onClick={handleExpandAll}>{t('actions.expandAll')}</Button>
+            <Button size="xs" variant="outline" onClick={handleCollapseAll}>{t('actions.collapseAll')}</Button>
             <Button
               size="sm"
               variant="outline"
               onClick={handleAddDepartment}
             >
               <Icon as={LuPlus} mr={1} />
-              Add Department
+              {t('actions.addDepartment')}
             </Button>
             <Button
               size="sm"
@@ -382,8 +382,8 @@ export const DepartmentsTab = () => {
                 onClick={handleAddDepartment}
               >
                 <Icon as={LuFolderOpen} boxSize={10} color="gray.300" />
-                <Text fontWeight="medium">{t('emptyState')}</Text>
-                <Text fontSize="sm">Click '+' or here to add a department</Text>
+                <Text fontWeight="medium">{t('emptyState.title')}</Text>
+                <Text fontSize="sm">{t('emptyState.subtitle')}</Text>
               </Box>
             )}
           </SortableContext>
@@ -394,22 +394,22 @@ export const DepartmentsTab = () => {
       <DialogRoot open={isDeleteDialogOpen} onOpenChange={(e) => setIsDeleteDialogOpen(e.open)}>
         <DialogContent>
           <DialogHeader>
-            <DialogTitle>{t('deleteDialog.title', 'Delete Department')}</DialogTitle>
+            <DialogTitle>{t('deleteDialog.title')}</DialogTitle>
           </DialogHeader>
           <DialogBody>
             <DialogDescription>
-              {t('deleteDialog.description', 'This department has sub-departments. How do you want to proceed?')}
+              {t('deleteDialog.description')}
             </DialogDescription>
           </DialogBody>
           <DialogFooter>
             <Button variant="outline" onClick={() => setIsDeleteDialogOpen(false)}>
-              {t('cancel', 'Cancel')}
+              {t('deleteDialog.cancel')}
             </Button>
             <Button colorPalette="blue" onClick={handlePromoteChildrenThenDelete}>
-              {t('deleteDialog.keepChildren', 'Keep sub-departments')}
+              {t('deleteDialog.keepChildren')}
             </Button>
             <Button colorPalette="red" onClick={handleConfirmDeleteWithChildren}>
-              {t('deleteDialog.deleteAll', 'Delete all')}
+              {t('deleteDialog.deleteAll')}
             </Button>
           </DialogFooter>
           <DialogCloseTrigger />

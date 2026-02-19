@@ -24,6 +24,10 @@
   },
   "status": {
     "active": "Active",
-    "inactive": "Inactive"
-  }
+    "inactive": "Inactive",
+    "verified": "Verified",
+    "pending": "Pending",
+    "unnamed": "Unnamed User"
+  },
+  "noUsersFound": "No users found."
 }

@@ -4,14 +4,17 @@
     "restore": "Restore",
     "archive": "Archive",
     "create": "Create Employee",
-    "selectDepartment": "Select Department"
+    "selectDepartment": "Select Department",
+    "searchPlaceholder": "Search employees...",
+    "filterDept": "Filter Dept"
   },
   "drawer": {
     "title": "Add New Employee"
   },
   "tabs": {
     "active": "Active Employees",
-    "archived": "Archived"
+    "archived": "Archived",
+    "other": "Other"
   },
   "table": {
     "name": "Name",
@@ -67,5 +70,8 @@
     "auditing": "Auditing",
     "recruitment": "Recruitment",
     "operations": "Operations"
+  },
+  "empty": {
+    "noMatch": "No employees found matching your criteria."
   }
 }

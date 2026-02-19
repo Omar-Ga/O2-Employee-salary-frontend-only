@@ -18,7 +18,7 @@ export const Sidebar = () => {
   return (
     <Box w="280px" h="100vh" bg="white" borderEndWidth="1px" borderColor="gray.50" pos="fixed" top="0" insetStart="0" py="8" px="6" shadow="none" zIndex="sticky">
       <HStack mb="16" gap="2" align="baseline">
-        <Heading size="lg" fontFamily="heading" letterSpacing="tight" fontWeight="bold">O2mation</Heading>
+        <Heading size="lg" fontFamily="heading" letterSpacing="tight" fontWeight="bold">{t('app.name')}</Heading>
         <Box w="1.5" h="1.5" borderRadius="full" bg="oxygen.500" alignSelf="center" />
         <Heading size="lg" fontFamily="heading" letterSpacing="tight" fontWeight="normal" color="gray.400">{t('app.subtitle')}</Heading>
       </HStack>
@@ -27,10 +27,10 @@ export const Sidebar = () => {
 
       <Stack gap="1">
         {MENU_ITEMS.map((item) => {
-          const isActive = item.path === "/" 
-            ? location.pathname === "/" 
+          const isActive = item.path === "/"
+            ? location.pathname === "/"
             : location.pathname.startsWith(item.path)
-          
+
           return (
             <ChakraLink asChild key={item.key} _hover={{ textDecor: 'none' }} w="full" display="block">
               <Link to={item.path}>
@@ -42,9 +42,9 @@ export const Sidebar = () => {
                   bg={isActive ? "oxygen.50" : "transparent"}
                   color={isActive ? "oxygen.600" : "gray.500"}
                   transition="all 0.2s"
-                  _hover={{ 
-                    bg: isActive ? "oxygen.50" : "gray.50", 
-                    color: "oxygen.600" 
+                  _hover={{
+                    bg: isActive ? "oxygen.50" : "gray.50",
+                    color: "oxygen.600"
                   }}
                   opacity={item.disabled ? 0.5 : 1}
                   pointerEvents={item.disabled ? "none" : "auto"}
@@ -52,17 +52,17 @@ export const Sidebar = () => {
                 >
                   <Icon as={item.icon} boxSize="5" strokeWidth={isActive ? 2.5 : 2} />
                   <Text fontWeight={isActive ? "bold" : "medium"}>{t(`items.${item.key}`)}</Text>
-                  
+
                   {isActive && (
-                    <Box 
-                      position="absolute" 
-                      left="0" 
-                      top="50%" 
-                      transform="translateY(-50%)" 
-                      h="16px" 
-                      w="3px" 
-                      bg="oxygen.500" 
-                      borderRadius="0 4px 4px 0" 
+                    <Box
+                      position="absolute"
+                      left="0"
+                      top="50%"
+                      transform="translateY(-50%)"
+                      h="16px"
+                      w="3px"
+                      bg="oxygen.500"
+                      borderRadius="0 4px 4px 0"
                     />
                   )}
                 </HStack>

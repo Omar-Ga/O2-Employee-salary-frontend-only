@@ -1,5 +1,6 @@
 {
   "app": {
+    "name": "O2mation",
     "subtitle": "الرواتب"
   },
   "section": {
@@ -8,8 +9,8 @@
   "items": {
     "dashboard": "لوحة التحكم",
     "employees": "الموظفين",
-    "payroll": "كشوف المرتبات",
-    "recruitment": "التوظيف",
+    "payroll": "الرواتب",
+    "recruitment": "التعيين",
     "settings": "الإعدادات"
   }
 }

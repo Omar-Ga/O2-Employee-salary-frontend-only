@@ -1,6 +1,7 @@
 import { useSortable } from "@dnd-kit/sortable"
 import { CSS } from "@dnd-kit/utilities"
 import { Box, Text, Icon, IconButton, Flex, Input } from "@chakra-ui/react"
+import { useTranslation } from "react-i18next"
 import { LuGripVertical, LuChevronDown, LuChevronRight } from "react-icons/lu"
 import { FlattenedItem } from "./types"
 import { memo, useState, useRef, useEffect } from "react"
@@ -24,6 +25,7 @@ export const DepartmentItem = memo(({
   onRename,
   color = "gray"
 }: DepartmentItemProps) => {
+  const { t } = useTranslation('departments')
   const [isEditing, setIsEditing] = useState(false)
   const [editValue, setEditValue] = useState(department.name)
   const inputRef = useRef<HTMLInputElement>(null)
@@ -163,7 +165,7 @@ export const DepartmentItem = memo(({
             <IconButton
               variant="ghost"
               size="xs"
-              aria-label="Toggle collapse"
+              aria-label={t('actions.toggleCollapse', { defaultValue: 'Toggle collapse' })}
               onClick={(e) => {
                 e.stopPropagation()
                 onToggleCollapse?.()

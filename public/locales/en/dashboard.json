@@ -12,6 +12,11 @@
   "sections": {
     "teamOverview": "Team Overview"
   },
+  "viewAll": "View All",
+  "active": "Active",
+  "onLeave": "On Leave",
+  "details": "Details",
+  "netMonthly": "Net Monthly",
   "employee": {
     "performanceScore": "Performance Score",
     "email": "Email"

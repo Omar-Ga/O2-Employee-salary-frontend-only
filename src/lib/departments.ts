@@ -12,7 +12,7 @@ export interface SubDepartmentConfig {
   label: string // Translation key part or raw string
 }
 
-export const DEPARTMENT_CONFIG: DepartmentConfig[] = [
+export const STATIC_DEPARTMENT_CONFIG: DepartmentConfig[] = [
   {
     id: "engineering",
     label: "Engineering",
@@ -63,16 +63,19 @@ export const DEPARTMENT_CONFIG: DepartmentConfig[] = [
   }
 ]
 
+// Keep for backward compatibility until all files updated, or remove if we update all
+export const DEPARTMENT_CONFIG = STATIC_DEPARTMENT_CONFIG
+
 // Helper to find which main department a sub-department belongs to
 export const getParentDepartment = (subDeptId: string): DepartmentConfig | undefined => {
-  return DEPARTMENT_CONFIG.find(d => 
+  return DEPARTMENT_CONFIG.find(d =>
     d.subDepartments.some(sub => sub.id === subDeptId)
   )
 }
 
 // Helper for the Select component
 export const getDepartmentCollection = () => {
-  const items = DEPARTMENT_CONFIG.flatMap(dept => 
+  const items = DEPARTMENT_CONFIG.flatMap(dept =>
     dept.subDepartments.map(sub => ({
       label: sub.label,
       value: sub.id,
@@ -84,6 +87,6 @@ export const getDepartmentCollection = () => {
 }
 
 export const getDepartmentColor = (subDeptId: string) => {
-    const parent = getParentDepartment(subDeptId)
-    return parent?.colorPalette || "gray"
+  const parent = getParentDepartment(subDeptId)
+  return parent?.colorPalette || "gray"
 }

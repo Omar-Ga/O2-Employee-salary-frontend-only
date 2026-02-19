@@ -1,149 +1,157 @@
-import { 
-  Box, 
-  Heading, 
-  Text, 
-  Table, 
-  Badge, 
-  HStack, 
-  Stack, 
-  Button, 
-  IconButton,
-  Alert,
+import {
+  Box,
+  Heading,
+  Text,
+  Table,
+  Badge,
+  HStack,
+  Stack,
+  Button,
+  Flex,
+  Skeleton,
 } from "@chakra-ui/react"
-import { LuTrash2, LuPencil, LuShieldAlert } from "react-icons/lu"
+import { Avatar } from "@/components/ui/avatar"
+import { MenuRoot, MenuTrigger, MenuContent, MenuItem } from "@/components/ui/menu"
+import { LuPlus, LuEllipsis, LuPencil, LuTrash2 } from "react-icons/lu"
 import { useTranslation } from "react-i18next"
-
-const MOCK_USERS = [
-  {
-    id: 1,
-    name: "Alex Morgan",
-    email: "alex.morgan@o2mation.com",
-    role: "admin",
-    status: "active",
-    avatar: "https://i.pravatar.cc/150?u=a042581f4e29026024d",
-  },
-  {
-    id: 2,
-    name: "Sarah Chen",
-    email: "sarah.chen@o2mation.com",
-    role: "editor",
-    status: "active",
-    avatar: "https://i.pravatar.cc/150?u=a042581f4e29026704d",
-  },
-  {
-    id: 3,
-    name: "James Wilson",
-    email: "james.wilson@o2mation.com",
-    role: "viewer",
-    status: "inactive",
-    avatar: "https://i.pravatar.cc/150?u=a04258114e29026302d",
-  },
-  {
-    id: 4,
-    name: "Emily Davis",
-    email: "emily.davis@o2mation.com",
-    role: "viewer",
-    status: "active",
-    avatar: "https://i.pravatar.cc/150?u=a04258114e29026702d",
-  },
-  {
-    id: 5,
-    name: "Michael Brown",
-    email: "michael.brown@o2mation.com",
-    role: "editor",
-    status: "active",
-    avatar: "https://i.pravatar.cc/150?u=a04258114e29026708d",
-  },
-]
+import { useQuery } from "@tanstack/react-query"
+import { userService } from "@/services/user.service"
 
 export const UsersTab = () => {
-  const { t } = useTranslation('users')
+  const { t } = useTranslation(['users', 'translation'])
+
+  const { data: users = [], isLoading } = useQuery({
+    queryKey: ['settings_users'],
+    queryFn: userService.getAll,
+  })
+
+  // Derive roles map for translations if available, fallback to identity
+  const getRoleLabel = (role: string) => role ? role.charAt(0).toUpperCase() + role.slice(1) : 'User'
 
   return (
-    <Box position="relative">
-      <Stack gap={6}>
+    <Box position="relative" animation="fade-in 0.4s ease-out">
+      <Stack gap={8}>
         {/* Header Section */}
-        <Box>
-          <Heading size="md" mb={2}>{t('title')}</Heading>
-          <Text color="gray.500" fontSize="sm">
-            {t('subtitle')}
-          </Text>
-        </Box>
-
-        {/* Restriction Warning */}
-        <Alert.Root status="error" variant="subtle" borderRadius="lg">
-          <Alert.Indicator>
-            <LuShieldAlert />
-          </Alert.Indicator>
-          <Alert.Content>
-            <Alert.Title>{t('alert.title')}</Alert.Title>
-            <Alert.Description>
-              {t('alert.description')}
-            </Alert.Description>
-          </Alert.Content>
-        </Alert.Root>
-
-        {/* Restricted Content Area */}
-        <Box 
-          opacity={0.5} 
-          pointerEvents="none" 
-          filter="blur(0.5px)"
-          userSelect="none"
-          aria-hidden="true"
-        >
-          {/* Action Bar (Disabled) */}
-          <HStack justify="space-between" mb={4}>
-            <Text fontSize="sm" fontWeight="medium" color="gray.600">
-              {t('count', { count: MOCK_USERS.length })}
+        <Flex justify="space-between" align="flex-end" wrap="wrap" gap={4}>
+          <Box>
+            <Heading size="lg" mb={2} letterSpacing="tight" fontWeight="bold">
+              {t('title')}
+            </Heading>
+            <Text color="gray.500" fontSize="sm">
+              {t('subtitle')}
             </Text>
-            <Button disabled size="sm" colorPalette="oxygen">
-              {t('invite')}
-            </Button>
-          </HStack>
+          </Box>
+          <Button size="sm" colorPalette="oxygen" gap={2} borderRadius="md" fontWeight="bold">
+            <LuPlus />
+            {t('invite')}
+          </Button>
+        </Flex>
 
-          {/* Users Table */}
-          <Table.Root size="md" variant="outline" striped>
-            <Table.Header>
+        {/* Users Table */}
+        <Box
+          borderRadius="2xl"
+          border="1px solid"
+          borderColor="gray.200"
+          background="white"
+          overflow="hidden"
+          shadow="sm"
+        >
+          <Table.Root size="md" variant="line">
+            <Table.Header bg="gray.50">
               <Table.Row>
-                <Table.ColumnHeader width="300px">{t('table.user')}</Table.ColumnHeader>
-                <Table.ColumnHeader>{t('table.role')}</Table.ColumnHeader>
-                <Table.ColumnHeader>{t('table.status')}</Table.ColumnHeader>
-                <Table.ColumnHeader textAlign="end">{t('table.actions')}</Table.ColumnHeader>
+                <Table.ColumnHeader color="gray.500" fontWeight="medium" textTransform="uppercase" fontSize="xs" letterSpacing="wider" width="350px">
+                  {t('table.user')}
+                </Table.ColumnHeader>
+                <Table.ColumnHeader color="gray.500" fontWeight="medium" textTransform="uppercase" fontSize="xs" letterSpacing="wider">
+                  {t('table.role')}
+                </Table.ColumnHeader>
+                <Table.ColumnHeader color="gray.500" fontWeight="medium" textTransform="uppercase" fontSize="xs" letterSpacing="wider">
+                  {t('table.status')}
+                </Table.ColumnHeader>
+                <Table.ColumnHeader textAlign="end" color="gray.500" fontWeight="medium" textTransform="uppercase" fontSize="xs" letterSpacing="wider">
+                  {t('table.actions')}
+                </Table.ColumnHeader>
               </Table.Row>
             </Table.Header>
             <Table.Body>
-              {MOCK_USERS.map((user) => (
-                <Table.Row key={user.id}>
+              {isLoading && Array.from({ length: 3 }).map((_, idx) => (
+                <Table.Row key={idx}>
+                  <Table.Cell><Skeleton height="40px" width="200px" /></Table.Cell>
+                  <Table.Cell><Skeleton height="24px" width="80px" /></Table.Cell>
+                  <Table.Cell><Skeleton height="24px" width="60px" /></Table.Cell>
+                  <Table.Cell><Skeleton height="32px" width="32px" ml="auto" /></Table.Cell>
+                </Table.Row>
+              ))}
+
+              {!isLoading && users.map((user) => (
+                <Table.Row key={user.id} _hover={{ bg: "gray.50/50" }} transition="background 0.2s">
                   <Table.Cell>
-                    <HStack gap={3}>
+                    <HStack gap={4}>
+                      <Avatar
+                        src={user.avatar ? `${import.meta.env.VITE_POCKETBASE_URL}/api/files/users/${user.id}/${user.avatar}` : undefined}
+                        name={user.name}
+                        size="md"
+                        colorPalette="oxygen"
+                      />
                       <Box>
-                        <Text fontWeight="medium" fontSize="sm">{user.name}</Text>
+                        <Text fontWeight="semibold" fontSize="sm" color="gray.900" letterSpacing="tight">{user.name || t('unnamed')}</Text>
                         <Text color="gray.500" fontSize="xs">{user.email}</Text>
                       </Box>
                     </HStack>
                   </Table.Cell>
                   <Table.Cell>
-                    <Badge variant="subtle" colorPalette={user.role === "admin" ? "purple" : user.role === "editor" ? "blue" : "gray"}>
-                      {t(`roles.${user.role}`)}
+                    <Badge
+                      variant="subtle"
+                      colorPalette={user.role === "admin" ? "purple" : user.role === "editor" ? "blue" : "gray"}
+                      borderRadius="full"
+                      px={3}
+                      py={1}
+                      fontWeight="bold"
+                    >
+                      {getRoleLabel(user.role)}
                     </Badge>
                   </Table.Cell>
                   <Table.Cell>
-                    <Badge variant="solid" colorPalette={user.status === "active" ? "green" : "red"} size="sm">
-                      {t(`status.${user.status}`)}
+                    <Badge
+                      variant="solid"
+                      colorPalette={user.verified ? "green" : "orange"}
+                      size="sm"
+                      borderRadius="full"
+                      px={3}
+                      py={1}
+                      fontWeight="bold"
+                      bg={user.verified ? "green.500" : "orange.400"}
+                    >
+                      {user.verified ? t('status.verified') : t('status.pending')}
                     </Badge>
                   </Table.Cell>
                   <Table.Cell textAlign="end">
-                    <HStack justify="end" gap={2}>
-                      <IconButton disabled aria-label={t('actions.edit')} variant="ghost" size="xs">
-                        <LuPencil />
-                      </IconButton>
-                      <IconButton disabled aria-label={t('actions.delete')} variant="ghost" size="xs" colorPalette="red">
-                        <LuTrash2 />
-                      </IconButton>
-                    </HStack>
+                    <MenuRoot>
+                      <MenuTrigger asChild>
+                        <Button variant="ghost" size="sm" color="gray.400" _hover={{ color: "gray.800", bg: "gray.100" }}>
+                          <LuEllipsis />
+                        </Button>
+                      </MenuTrigger>
+                      <MenuContent>
+                        <MenuItem value="edit" gap={2}>
+                          <LuPencil /> {t('actions.edit')}
+                        </MenuItem>
+                        <MenuItem value="delete" color="red.500" _hover={{ bg: "red.50" }} gap={2}>
+                          <LuTrash2 /> {t('actions.delete')}
+                        </MenuItem>
+                      </MenuContent>
+                    </MenuRoot>
                   </Table.Cell>
                 </Table.Row>
               ))}
+
+              {!isLoading && users.length === 0 && (
+                <Table.Row>
+                  <Table.Cell colSpan={4} textAlign="center" py={12}>
+                    <Text color="gray.500">{t('noUsersFound')}</Text>
+                  </Table.Cell>
+                </Table.Row>
+              )}
             </Table.Body>
           </Table.Root>
         </Box>

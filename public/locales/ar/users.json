@@ -24,6 +24,10 @@
   },
   "status": {
     "active": "نشط",
-    "inactive": "غير نشط"
-  }
+    "inactive": "غير نشط",
+    "verified": "موثق",
+    "pending": "قيد الانتظار",
+    "unnamed": "مستخدم بدون اسم"
+  },
+  "noUsersFound": "لم يتم العثور على مستخدمين."
 }

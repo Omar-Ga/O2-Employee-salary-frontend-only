@@ -13,6 +13,7 @@ import {
   Circle,
   VStack,
 } from "@chakra-ui/react"
+import { useQuery, useMutation, useQueryClient } from "@tanstack/react-query"
 import { useTranslation } from "react-i18next"
 import { useState, useMemo, useEffect } from "react"
 import {
@@ -26,12 +27,13 @@ import {
 import { toaster } from "@/components/ui/toaster"
 import { payrollService } from "@/services/payroll.service"
 import { employeeService } from "@/services/employee.service"
-import { 
-  LuTrendingUp, 
-  LuTrendingDown, 
-  LuAward, 
-  LuWallet, 
-  LuClock, 
+import { transactionService } from "@/services/transaction.service"
+import {
+  LuTrendingUp,
+  LuTrendingDown,
+  LuAward,
+  LuWallet,
+  LuClock,
   LuCalendar,
   LuCheck,
   LuTrash2,
@@ -64,27 +66,56 @@ const INITIAL_STAGED: StagedData = {
 export const TransactionDrawer = ({ open, onOpenChange, employeeIds, onSuccess }: TransactionDrawerProps) => {
   const { t } = useTranslation('payroll')
   const [activeCategory, setActiveCategory] = useState<TransactionCategory>("overtime")
-  
+  const queryClient = useQueryClient()
+
   // Staged State
   const [staged, setStaged] = useState<StagedData>(INITIAL_STAGED)
-  
-  const isBulk = employeeIds.length > 1
-  const singleEmployee = useMemo(() => 
-    !isBulk && employeeIds.length === 1 
-      ? employeeService.getAll().find(e => e.id === employeeIds[0]) 
-      : null
-  , [employeeIds, isBulk])
 
-  const [existingTransactions, setExistingTransactions] = useState<Transaction[]>([])
+  const { data: employees = [] } = useQuery({
+    queryKey: ['employees'],
+    queryFn: employeeService.getAll,
+  })
+
+  const isBulk = employeeIds.length > 1
+  const singleEmployee = useMemo(() =>
+    !isBulk && employeeIds.length === 1
+      ? employees.find(e => e.id === employeeIds[0])
+      : null
+    , [employees, employeeIds, isBulk])
 
   // Load existing transactions for preview
-  useEffect(() => {
-    if (open && singleEmployee) {
-      setExistingTransactions(payrollService.getTransactions(singleEmployee.id))
-    } else {
-      setExistingTransactions([])
+  const { data: existingTransactions = [] } = useQuery({
+    queryKey: ['transactions', singleEmployee?.id],
+    queryFn: () => transactionService.getAll(singleEmployee?.id),
+    enabled: !!singleEmployee && open,
+  })
+
+  // Mutations
+  const createMutation = useMutation({
+    mutationFn: transactionService.createBulk,
+    onSuccess: () => {
+      queryClient.invalidateQueries({ queryKey: ['transactions'] })
+      toaster.create({
+        title: isBulk
+          ? t('dialog.toast.bulkAdded', { count: employeeIds.length })
+          : t('dialog.toast.added'),
+        type: "success"
+      })
+      onOpenChange(false)
+      onSuccess()
     }
-  }, [open, singleEmployee])
+  })
+
+  const deleteMutation = useMutation({
+    mutationFn: transactionService.delete,
+    onSuccess: () => {
+      queryClient.invalidateQueries({ queryKey: ['transactions'] })
+      toaster.create({
+        title: t('dialog.toast.removed'),
+        type: "success"
+      })
+    }
+  })
 
   // Reset state when opening
   useEffect(() => {
@@ -108,57 +139,37 @@ export const TransactionDrawer = ({ open, onOpenChange, employeeIds, onSuccess }
   }
 
   const handleSubmit = () => {
-    const transactionsToCreate: any[] = []
+    const transactionsToCreate: Partial<Transaction>[] = []
 
     // Iterate through staged data and create transactions for non-zero amounts
     Object.entries(staged).forEach(([cat, data]) => {
-       if (data.amount > 0) {
-           const type = getType(cat as TransactionCategory)
-           const baseTx = {
-               category: cat,
-               type,
-               unit: data.unit,
-               amount: data.amount,
-               reason: (data as any).reason,
-               date: new Date().toISOString(),
-           }
-           
-           employeeIds.forEach(id => {
-               transactionsToCreate.push({
-                   ...baseTx,
-                   employeeId: id
-               })
-           })
-       }
+      if (data.amount > 0) {
+        const type = getType(cat as TransactionCategory)
+        const baseTx = {
+          category: cat,
+          type,
+          unit: data.unit,
+          amount: data.amount,
+          reason: (data as any).reason,
+          date: new Date().toISOString(),
+          isClosed: false
+        } as unknown as Partial<Transaction> // Type assertion needed for mixed fields
+
+        employeeIds.forEach(id => {
+          transactionsToCreate.push({
+            ...baseTx,
+            employeeId: id
+          })
+        })
+      }
     })
 
     if (transactionsToCreate.length === 0) {
-        onOpenChange(false)
-        return
+      onOpenChange(false)
+      return
     }
 
-    payrollService.addTransactions(transactionsToCreate)
-    
-    toaster.create({ 
-      title: isBulk 
-        ? t('dialog.toast.bulkAdded', { count: employeeIds.length }) 
-        : t('dialog.toast.added'), 
-      type: "success" 
-    })
-    
-    onOpenChange(false)
-    onSuccess()
-  }
-
-  const handleRemoveTransaction = (id: string) => {
-    payrollService.removeTransaction(id)
-    if (singleEmployee) {
-      setExistingTransactions(payrollService.getTransactions(singleEmployee.id))
-    }
-    toaster.create({ 
-      title: t('dialog.toast.removed'), 
-      type: "success" 
-    })
+    createMutation.mutate(transactionsToCreate)
   }
 
   // Live Calculation Preview
@@ -167,15 +178,15 @@ export const TransactionDrawer = ({ open, onOpenChange, employeeIds, onSuccess }
 
     // Convert staged data into temporary transaction objects
     const stagedTransactions = Object.entries(staged)
-        .filter(([_, data]) => data.amount > 0)
-        .map(([cat, data]) => ({
-            category: cat,
-            type: getType(cat as TransactionCategory),
-            unit: data.unit,
-            amount: data.amount,
-            employeeId: singleEmployee.id,
-            isClosed: false
-        })) as any[]
+      .filter(([_, data]) => data.amount > 0)
+      .map(([cat, data]) => ({
+        category: cat,
+        type: getType(cat as TransactionCategory),
+        unit: data.unit,
+        amount: data.amount,
+        employeeId: singleEmployee.id,
+        isClosed: false
+      })) as any[]
 
     return payrollService.calculateSlip(singleEmployee, [...existingTransactions, ...stagedTransactions])
   }, [singleEmployee, staged, existingTransactions])
@@ -183,15 +194,15 @@ export const TransactionDrawer = ({ open, onOpenChange, employeeIds, onSuccess }
   const hasChanges = Object.values(staged).some(v => v.amount > 0)
 
   return (
-    <DrawerRoot 
-      open={open} 
-      onOpenChange={(e) => onOpenChange(e.open)} 
+    <DrawerRoot
+      open={open}
+      onOpenChange={(e) => onOpenChange(e.open)}
       placement="bottom"
     >
       <DrawerBackdrop />
-      <DrawerContent 
-        borderTopRadius="2xl" 
-        maxH="90vh" 
+      <DrawerContent
+        borderTopRadius="2xl"
+        maxH="90vh"
         overflow="hidden"
         boxShadow="0 -10px 40px rgba(0,0,0,0.1)"
       >
@@ -199,8 +210,8 @@ export const TransactionDrawer = ({ open, onOpenChange, employeeIds, onSuccess }
           <HStack justify="space-between" align="center">
             <VStack align="flex-start" gap="0">
               <DrawerTitle fontSize="xl" fontWeight="bold">
-                {isBulk 
-                  ? t('dialog.titleBulk', { count: employeeIds.length }) 
+                {isBulk
+                  ? t('dialog.titleBulk', { count: employeeIds.length })
                   : t('dialog.title', { name: singleEmployee?.name })}
               </DrawerTitle>
               {!isBulk && singleEmployee && (
@@ -211,12 +222,13 @@ export const TransactionDrawer = ({ open, onOpenChange, employeeIds, onSuccess }
               <Button variant="ghost" onClick={() => onOpenChange(false)} size="sm">
                 {t('dialog.cancel')}
               </Button>
-              <Button 
-                onClick={handleSubmit} 
-                colorPalette="oxygen" 
-                size="md" 
+              <Button
+                onClick={handleSubmit}
+                colorPalette="oxygen"
+                size="md"
                 px="8"
                 disabled={!hasChanges}
+                loading={createMutation.isPending}
               >
                 <LuCheck /> {t('dialog.save')}
               </Button>
@@ -233,11 +245,11 @@ export const TransactionDrawer = ({ open, onOpenChange, employeeIds, onSuccess }
                   <Heading size="xs" color="gray.500" textTransform="uppercase" mb="4" letterSpacing="widest">
                     {t('preview.currentSalary')}
                   </Heading>
-                  <Box 
-                    p="5" 
-                    bg="white" 
-                    borderRadius="xl" 
-                    borderWidth="1px" 
+                  <Box
+                    p="5"
+                    bg="white"
+                    borderRadius="xl"
+                    borderWidth="1px"
                     shadow="sm"
                     position="relative"
                     overflow="hidden"
@@ -264,11 +276,11 @@ export const TransactionDrawer = ({ open, onOpenChange, employeeIds, onSuccess }
                       <Icon as={LuTrendingDown} color="red.500" />
                     )}
                   </HStack>
-                  <Box 
-                    p="6" 
-                    bg="oxygen.50" 
-                    borderRadius="xl" 
-                    borderWidth="2px" 
+                  <Box
+                    p="6"
+                    bg="oxygen.50"
+                    borderRadius="xl"
+                    borderWidth="2px"
                     borderColor="oxygen.200"
                     shadow="md"
                     position="relative"
@@ -286,19 +298,19 @@ export const TransactionDrawer = ({ open, onOpenChange, employeeIds, onSuccess }
 
                 {projectedSlip && (
                   <Stack gap="2">
-                     <HStack justify="space-between" fontSize="sm">
-                        <Text color="gray.500">{t('preview.totalAdditions')}</Text>
-                        <Text color="green.600" fontWeight="bold">+{formatCurrency(projectedSlip.additions)}</Text>
-                     </HStack>
-                     <HStack justify="space-between" fontSize="sm">
-                        <Text color="gray.500">{t('preview.totalDeductions')}</Text>
-                        <Text color="red.600" fontWeight="bold">-{formatCurrency(projectedSlip.deductions)}</Text>
-                     </HStack>
-                     <Separator />
-                     <HStack justify="space-between" fontSize="sm" fontWeight="bold">
-                        <Text color="gray.700">{t('preview.hourlyRate')}</Text>
-                        <Text color="gray.700">{formatCurrency(projectedSlip.hourlyRate)}/hr</Text>
-                     </HStack>
+                    <HStack justify="space-between" fontSize="sm">
+                      <Text color="gray.500">{t('preview.totalAdditions')}</Text>
+                      <Text color="green.600" fontWeight="bold">+{formatCurrency(projectedSlip.additions)}</Text>
+                    </HStack>
+                    <HStack justify="space-between" fontSize="sm">
+                      <Text color="gray.500">{t('preview.totalDeductions')}</Text>
+                      <Text color="red.600" fontWeight="bold">-{formatCurrency(projectedSlip.deductions)}</Text>
+                    </HStack>
+                    <Separator />
+                    <HStack justify="space-between" fontSize="sm" fontWeight="bold">
+                      <Text color="gray.700">{t('preview.hourlyRate')}</Text>
+                      <Text color="gray.700">{formatCurrency(projectedSlip.hourlyRate)}{t('units.perHour')}</Text>
+                    </HStack>
                   </Stack>
                 )}
               </Stack>
@@ -310,32 +322,32 @@ export const TransactionDrawer = ({ open, onOpenChange, employeeIds, onSuccess }
                 <Box>
                   <Heading size="sm" mb="6" color="gray.700">{t('dialog.selectType')}</Heading>
                   <Grid templateColumns="repeat(4, 1fr)" gap="4">
-                    <TypeButton 
-                      active={activeCategory === 'overtime'} 
+                    <TypeButton
+                      active={activeCategory === 'overtime'}
                       onClick={() => setActiveCategory('overtime')}
                       icon={LuClock}
                       label={t('categories.overtime')}
                       color="green"
                       badgeCount={staged.overtime.amount > 0 ? staged.overtime.amount : undefined}
                     />
-                    <TypeButton 
-                      active={activeCategory === 'deduction'} 
+                    <TypeButton
+                      active={activeCategory === 'deduction'}
                       onClick={() => setActiveCategory('deduction')}
                       icon={LuTrendingDown}
                       label={t('categories.deduction')}
                       color="red"
                       badgeCount={staged.deduction.amount > 0 ? staged.deduction.amount : undefined}
                     />
-                    <TypeButton 
-                      active={activeCategory === 'bonus'} 
+                    <TypeButton
+                      active={activeCategory === 'bonus'}
                       onClick={() => setActiveCategory('bonus')}
                       icon={LuAward}
                       label={t('categories.bonus')}
                       color="blue"
                       badgeCount={staged.bonus.amount > 0 ? 1 : undefined} // Just show a badge if amount > 0
                     />
-                    <TypeButton 
-                      active={activeCategory === 'advance'} 
+                    <TypeButton
+                      active={activeCategory === 'advance'}
                       onClick={() => setActiveCategory('advance')}
                       icon={LuWallet}
                       label={t('categories.advance')}
@@ -348,31 +360,31 @@ export const TransactionDrawer = ({ open, onOpenChange, employeeIds, onSuccess }
                 <HStack align="flex-end" gap="8">
                   <Stack flex="1" gap="4">
                     <HStack justify="space-between">
-                       <Heading size="sm" color="gray.700">{t('dialog.entryAmount')}</Heading>
-                       {['overtime', 'deduction'].includes(activeCategory) && (
-                         <SegmentGroup.Root 
-                           size="sm" 
-                           value={staged[activeCategory as 'overtime' | 'deduction'].unit} 
-                           onValueChange={(e) => updateStaged(activeCategory as any, { unit: e.value as any })}
-                         >
-                           <SegmentGroup.Indicator />
-                           <SegmentGroup.Item value="hours">
-                              <SegmentGroup.ItemText fontSize="xs"><LuClock style={{display: 'inline', marginRight: '4px'}} /> {t('units.hours')}</SegmentGroup.ItemText>
-                              <SegmentGroup.ItemHiddenInput />
-                           </SegmentGroup.Item>
-                           <SegmentGroup.Item value="days">
-                              <SegmentGroup.ItemText fontSize="xs"><LuCalendar style={{display: 'inline', marginRight: '4px'}} /> {t('units.days')}</SegmentGroup.ItemText>
-                              <SegmentGroup.ItemHiddenInput />
-                           </SegmentGroup.Item>
-                         </SegmentGroup.Root>
-                       )}
+                      <Heading size="sm" color="gray.700">{t('dialog.entryAmount')}</Heading>
+                      {['overtime', 'deduction'].includes(activeCategory) && (
+                        <SegmentGroup.Root
+                          size="sm"
+                          value={staged[activeCategory as 'overtime' | 'deduction'].unit}
+                          onValueChange={(e) => updateStaged(activeCategory as any, { unit: e.value as any })}
+                        >
+                          <SegmentGroup.Indicator />
+                          <SegmentGroup.Item value="hours">
+                            <SegmentGroup.ItemText fontSize="xs"><LuClock style={{ display: 'inline', marginRight: '4px' }} /> {t('units.hours')}</SegmentGroup.ItemText>
+                            <SegmentGroup.ItemHiddenInput />
+                          </SegmentGroup.Item>
+                          <SegmentGroup.Item value="days">
+                            <SegmentGroup.ItemText fontSize="xs"><LuCalendar style={{ display: 'inline', marginRight: '4px' }} /> {t('units.days')}</SegmentGroup.ItemText>
+                            <SegmentGroup.ItemHiddenInput />
+                          </SegmentGroup.Item>
+                        </SegmentGroup.Root>
+                      )}
                     </HStack>
-                    
+
                     <Box position="relative">
-                      <Input 
-                        size="xl" 
-                        type="number" 
-                        value={staged[activeCategory].amount || ''} 
+                      <Input
+                        size="xl"
+                        type="number"
+                        value={staged[activeCategory].amount || ''}
                         onChange={e => updateStaged(activeCategory, { amount: Number(e.target.value) })}
                         placeholder="0.00"
                         fontSize="3xl"
@@ -391,15 +403,15 @@ export const TransactionDrawer = ({ open, onOpenChange, employeeIds, onSuccess }
 
                   {activeCategory === 'deduction' && (
                     <Stack flex="1.5" gap="4">
-                       <Heading size="sm" color="gray.700">{t('dialog.reason')}</Heading>
-                       <Textarea 
-                          value={staged.deduction.reason} 
-                          onChange={e => updateStaged('deduction', { reason: e.target.value })} 
-                          placeholder={t('dialog.reasonPlaceholder')} 
-                          h="80px"
-                          borderRadius="2xl"
-                          resize="none"
-                       />
+                      <Heading size="sm" color="gray.700">{t('dialog.reason')}</Heading>
+                      <Textarea
+                        value={staged.deduction.reason}
+                        onChange={e => updateStaged('deduction', { reason: e.target.value })}
+                        placeholder={t('dialog.reasonPlaceholder')}
+                        h="80px"
+                        borderRadius="2xl"
+                        resize="none"
+                      />
                     </Stack>
                   )}
                 </HStack>
@@ -408,13 +420,13 @@ export const TransactionDrawer = ({ open, onOpenChange, employeeIds, onSuccess }
                   <HStack color="blue.700" gap="3">
                     <Icon as={LuCheck} />
                     <Text fontSize="sm" fontWeight="medium">
-                      {isBulk 
+                      {isBulk
                         ? t('preview.bulkSummary', { count: employeeIds.length, category: t(`categories.${activeCategory}`) })
-                        : t('preview.impactDescription', { 
-                            category: t(`categories.${activeCategory}`),
-                            amount: staged[activeCategory].amount,
-                            unit: t(`units.${(staged[activeCategory] as any).unit}`)
-                          })}
+                        : t('preview.impactDescription', {
+                          category: t(`categories.${activeCategory}`),
+                          amount: staged[activeCategory].amount,
+                          unit: t(`units.${(staged[activeCategory] as any).unit}`)
+                        })}
                     </Text>
                   </HStack>
                 </Box>
@@ -422,10 +434,10 @@ export const TransactionDrawer = ({ open, onOpenChange, employeeIds, onSuccess }
                 {!isBulk && existingTransactions.length > 0 && (
                   <Box>
                     <Heading size="sm" mb="4" color="gray.700">{t('dialog.activeTransactions')}</Heading>
-                    <Box 
-                      maxH="280px" 
-                      overflowY="auto" 
-                      pr="2" 
+                    <Box
+                      maxH="280px"
+                      overflowY="auto"
+                      pr="2"
                       css={{
                         "&::-webkit-scrollbar": { width: "4px" },
                         "&::-webkit-scrollbar-track": { bg: "transparent" },
@@ -434,20 +446,20 @@ export const TransactionDrawer = ({ open, onOpenChange, employeeIds, onSuccess }
                     >
                       <Stack gap="2">
                         {existingTransactions.map((tx) => (
-                          <HStack 
-                            key={tx.id} 
-                            p="3" 
-                            bg="white" 
-                            borderWidth="1px" 
-                            borderRadius="xl" 
+                          <HStack
+                            key={tx.id}
+                            p="3"
+                            bg="white"
+                            borderWidth="1px"
+                            borderRadius="xl"
                             justify="space-between"
                             animation="slide-in-bottom 0.2s ease-out"
                           >
                             <HStack gap="3">
                               <Circle size="8" bg={tx.type === 'addition' ? "green.50" : "red.50"}>
-                                <Icon 
-                                  as={tx.category === 'overtime' ? LuClock : tx.category === 'bonus' ? LuAward : tx.category === 'advance' ? LuWallet : LuTrendingDown} 
-                                  color={tx.type === 'addition' ? "green.500" : "red.500"} 
+                                <Icon
+                                  as={tx.category === 'overtime' ? LuClock : tx.category === 'bonus' ? LuAward : tx.category === 'advance' ? LuWallet : LuTrendingDown}
+                                  color={tx.type === 'addition' ? "green.500" : "red.500"}
                                   boxSize="4"
                                 />
                               </Circle>
@@ -458,12 +470,13 @@ export const TransactionDrawer = ({ open, onOpenChange, employeeIds, onSuccess }
                                 </Text>
                               </Box>
                             </HStack>
-                            <IconButton 
-                              variant="ghost" 
-                              size="sm" 
-                              colorPalette="red" 
-                              onClick={() => handleRemoveTransaction(tx.id)}
-                              aria-label="Delete"
+                            <IconButton
+                              variant="ghost"
+                              size="sm"
+                              colorPalette="red"
+                              onClick={() => deleteMutation.mutate(tx.id)}
+                              loading={deleteMutation.isPending && deleteMutation.variables === tx.id}
+                              aria-label={t('dialog.actions.delete')}
                             >
                               <LuTrash2 />
                             </IconButton>
@@ -520,7 +533,7 @@ const TypeButton = ({ active, onClick, icon, label, color, badgeCount }: TypeBut
       <Text fontWeight="bold" fontSize="xs" textTransform="uppercase" letterSpacing="wider">
         {label}
       </Text>
-      
+
       {/* Active Indicator Check */}
       {active && (
         <Box position="absolute" top="2" right="2">
@@ -533,9 +546,9 @@ const TypeButton = ({ active, onClick, icon, label, color, badgeCount }: TypeBut
       {/* Staged Data Badge */}
       {!active && badgeCount !== undefined && (
         <Box position="absolute" top="-2" right="-2">
-             <Circle size="6" bg={`${color}.500`} color="white" border="2px solid white">
-                <Text fontSize="xs" fontWeight="bold">{typeof badgeCount === 'number' && badgeCount > 9 ? '9+' : badgeCount}</Text>
-             </Circle>
+          <Circle size="6" bg={`${color}.500`} color="white" border="2px solid white">
+            <Text fontSize="xs" fontWeight="bold">{typeof badgeCount === 'number' && badgeCount > 9 ? '9+' : badgeCount}</Text>
+          </Circle>
         </Box>
       )}
     </Button>

@@ -11,6 +11,11 @@ export enum Collections {
 	Mfas = "_mfas",
 	Otps = "_otps",
 	Superusers = "_superusers",
+	Departments = "departments",
+	Employees = "employees",
+	PayrollRuns = "payroll_runs",
+	PayrollSlips = "payroll_slips",
+	Transactions = "transactions",
 	Users = "users",
 }
 
@@ -92,6 +97,26 @@ export type SuperusersRecord = {
 	verified?: boolean
 }
 
+export type DepartmentsRecord = {
+	id: string
+}
+
+export type EmployeesRecord = {
+	id: string
+}
+
+export type PayrollRunsRecord = {
+	id: string
+}
+
+export type PayrollSlipsRecord = {
+	id: string
+}
+
+export type TransactionsRecord = {
+	id: string
+}
+
 export type UsersRecord = {
 	avatar?: FileNameString
 	created: IsoAutoDateString
@@ -111,6 +136,11 @@ export type ExternalauthsResponse<Texpand = unknown> = Required<ExternalauthsRec
 export type MfasResponse<Texpand = unknown> = Required<MfasRecord> & BaseSystemFields<Texpand>
 export type OtpsResponse<Texpand = unknown> = Required<OtpsRecord> & BaseSystemFields<Texpand>
 export type SuperusersResponse<Texpand = unknown> = Required<SuperusersRecord> & AuthSystemFields<Texpand>
+export type DepartmentsResponse<Texpand = unknown> = Required<DepartmentsRecord> & BaseSystemFields<Texpand>
+export type EmployeesResponse<Texpand = unknown> = Required<EmployeesRecord> & BaseSystemFields<Texpand>
+export type PayrollRunsResponse<Texpand = unknown> = Required<PayrollRunsRecord> & BaseSystemFields<Texpand>
+export type PayrollSlipsResponse<Texpand = unknown> = Required<PayrollSlipsRecord> & BaseSystemFields<Texpand>
+export type TransactionsResponse<Texpand = unknown> = Required<TransactionsRecord> & BaseSystemFields<Texpand>
 export type UsersResponse<Texpand = unknown> = Required<UsersRecord> & AuthSystemFields<Texpand>
 
 // Types containing all Records and Responses, useful for creating typing helper functions
@@ -121,6 +151,11 @@ export type CollectionRecords = {
 	_mfas: MfasRecord
 	_otps: OtpsRecord
 	_superusers: SuperusersRecord
+	departments: DepartmentsRecord
+	employees: EmployeesRecord
+	payroll_runs: PayrollRunsRecord
+	payroll_slips: PayrollSlipsRecord
+	transactions: TransactionsRecord
 	users: UsersRecord
 }
 
@@ -130,6 +165,11 @@ export type CollectionResponses = {
 	_mfas: MfasResponse
 	_otps: OtpsResponse
 	_superusers: SuperusersResponse
+	departments: DepartmentsResponse
+	employees: EmployeesResponse
+	payroll_runs: PayrollRunsResponse
+	payroll_slips: PayrollSlipsResponse
+	transactions: TransactionsResponse
 	users: UsersResponse
 }
 

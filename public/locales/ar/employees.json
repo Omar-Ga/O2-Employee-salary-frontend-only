@@ -4,14 +4,17 @@
     "restore": "استعادة",
     "archive": "أرشفة",
     "create": "إنشاء موظف",
-    "selectDepartment": "اختر القسم"
+    "selectDepartment": "اختر القسم",
+    "searchPlaceholder": "بحث عن موظفين...",
+    "filterDept": "تصفية الأقسام"
   },
   "drawer": {
     "title": "إضافة موظف جديد"
   },
   "tabs": {
     "active": "الموظفين النشطين",
-    "archived": "المؤرشفين"
+    "archived": "المؤرشفين",
+    "other": "أخرى"
   },
   "table": {
     "name": "الاسم",
@@ -67,5 +70,8 @@
     "auditing": "تدقيق",
     "recruitment": "توظيف",
     "operations": "عمليات"
+  },
+  "empty": {
+    "noMatch": "لم يتم العثور على موظفين يطابقون معايير البحث."
   }
 }
