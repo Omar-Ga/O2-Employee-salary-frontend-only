@@ -122,9 +122,9 @@ export const EmployeeCard = ({
               <Text fontSize="xs" color="gray.500">
                 Start: {new Date(employee.created).toLocaleDateString()}
               </Text>
-              {(employee as any).archiveDate && (
+              {employee.archiveDate && (
                 <Text fontSize="xs" color="gray.500">
-                  End: {new Date((employee as any).archiveDate).toLocaleDateString()}
+                  End: {new Date(employee.archiveDate).toLocaleDateString()}
                 </Text>
               )}
             </Box>

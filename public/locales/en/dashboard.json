@@ -5,10 +5,11 @@
     "totalPayroll": "Total Payroll",
     "sinceLast": "{{value}}% since last payout",
     "firstPayout": "First payout",
-    "activeEmployees": "Active Employees",
-    "avgPerformance": "Avg. Performance",
-    "performanceTrend": "Top tier productivity"
+    "activeEmployees": "Active Employees"
   },
+  "deductionRateLabel": "Deduction Rate",
+  "sinceLastDeduction": "{{value}}% since last month",
+  "noDeductions": "No deductions this month",
   "sections": {
     "teamOverview": "Team Overview"
   },

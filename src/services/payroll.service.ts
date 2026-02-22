@@ -1,6 +1,13 @@
 import { Employee, Transaction, PayrollRun, PayrollSlip } from '@/types'
+import { PayrollRunsResponse, PayrollSlipsResponse, EmployeesResponse, TransactionsResponse } from '@/types/pocketbase-types'
 import { DateTime } from 'luxon'
 import { pb } from '@/lib/pocketbase'
+
+// Expanded slip type for history queries that include employee + transaction relations
+type ExpandedPayrollSlip = PayrollSlipsResponse<{
+  employeeId: EmployeesResponse
+  transactions: TransactionsResponse[]
+}>
 
 /** Converts a raw transaction amount to its cash equivalent */
 const toCash = (t: Transaction, employee: Employee): number => {
@@ -50,7 +57,7 @@ export const payrollService = {
       deductionAmount,
       advanceAmount,
       netSalary: employee.monthlySalary + totalAdditions - totalDeductions,
-      transactions: transactions as any
+      transactions
     }
   },
 
@@ -93,14 +100,22 @@ export const payrollService = {
   },
 
   getHistory: async (): Promise<PayrollRun[]> => {
-    const runs = await pb.collection('payroll_runs').getFullList({ sort: '-created' })
-    const slips = await pb.collection('payroll_slips').getFullList({
+    const runs = await pb.collection('payroll_runs').getFullList<PayrollRunsResponse>({ sort: '-created' })
+    const slips = await pb.collection('payroll_slips').getFullList<ExpandedPayrollSlip>({
       sort: '-created',
       expand: 'employeeId,transactions'
     })
 
     return runs.map(run => {
-      const runSlips = slips.filter(s => s.payrollRunId === run.id) as any
+      const runSlips = slips
+        .filter(s => s.payrollRunId === run.id)
+        .map(s => ({
+          ...s,
+          employeeName: s.expand?.employeeId?.name,
+          employeeJobTitle: s.expand?.employeeId?.jobTitle,
+          transactions: s.expand?.transactions || []
+        } as unknown as PayrollSlip))
+
       return {
         ...run,
         slips: runSlips
@@ -108,20 +123,33 @@ export const payrollService = {
     })
   },
 
-  /** Returns the total net payout of the most recent closed payroll run, or null if none exist. */
-  getLastClosedRunTotal: async (): Promise<{ total: number; period: string } | null> => {
+  /** Returns totals from the last closed payroll run, or null if none exist.
+   *  Includes net total, deduction total (deductionAmount + advanceAmount),
+   *  and gross total (basicSalary sum) for deduction rate comparison. */
+  getLastClosedRunTotal: async (): Promise<{
+    total: number
+    period: string
+    deductionTotal: number
+    grossTotal: number
+  } | null> => {
     try {
       const lastRun = await pb.collection('payroll_runs').getFirstListItem(
         "isClosed = true",
         { sort: '-created' }
       )
 
-      const slips = await pb.collection('payroll_slips').getFullList({
+      const slips = await pb.collection('payroll_slips').getFullList<PayrollSlipsResponse>({
         filter: `payrollRunId = "${lastRun.id}"`,
       })
 
-      const total = slips.reduce((sum, s: any) => sum + (s.netSalary || 0), 0)
-      return { total, period: lastRun.period as string }
+      const total = slips.reduce((sum, s) => sum + (s.netSalary || 0), 0)
+      const deductionTotal = slips.reduce(
+        (sum, s) => sum + (s.deductionAmount || 0) + (s.advanceAmount || 0),
+        0
+      )
+      const grossTotal = slips.reduce((sum, s) => sum + (s.basicSalary || 0), 0)
+
+      return { total, period: lastRun.period as string, deductionTotal, grossTotal }
     } catch {
       // No closed run found
       return null

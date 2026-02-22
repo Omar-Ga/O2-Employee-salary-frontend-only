@@ -8,7 +8,6 @@ import { Payroll } from '@/pages/Payroll'
 import { Settings } from '@/pages/Settings'
 import { AboutTab } from '@/components/settings/tabs/AboutTab'
 import { DepartmentsTab } from '@/components/settings/tabs/DepartmentsTab'
-import { UsersTab } from '@/components/settings/tabs/UsersTab'
 import { ExportTab } from '@/components/settings/tabs/ExportTab'
 import { ImportTab } from '@/components/settings/tabs/ImportTab'
 import { PreferencesTab } from '@/components/settings/tabs/PreferencesTab'
@@ -38,7 +37,6 @@ function App() {
             <Route index element={<Navigate to="departments" replace />} />
             <Route path="about" element={<AboutTab />} />
             <Route path="departments" element={<DepartmentsTab />} />
-            <Route path="users" element={<UsersTab />} />
             <Route path="export" element={<ExportTab />} />
             <Route path="import" element={<ImportTab />} />
             <Route path="preferences" element={<PreferencesTab />} />

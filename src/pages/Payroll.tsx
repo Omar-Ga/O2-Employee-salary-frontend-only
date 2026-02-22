@@ -13,6 +13,7 @@ import { useDepartments } from "@/hooks/useDepartments"
 import { DepartmentPayrollGroup } from "@/components/payroll/DepartmentPayrollGroup"
 import { HistoricalDepartmentPayrollGroup } from "@/components/payroll/HistoricalDepartmentPayrollGroup"
 import { useRef } from "react"
+import { PayrollRun, PayrollSlip } from "@/types"
 import { useReactToPrint } from "react-to-print"
 import { PayslipsPrintTemplate } from "@/components/payroll/PayslipsPrintTemplate"
 
@@ -70,7 +71,7 @@ const PayrollRunView = () => {
       queryClient.invalidateQueries({ queryKey: ['lastClosedPayroll'] })
       toaster.create({ title: t('run.toast.monthClosed'), type: "success" })
     },
-    onError: (error: any) => {
+    onError: (error: Error) => {
       toaster.create({ title: "Failed to close month", description: error.message, type: "error" })
     }
   })
@@ -101,7 +102,7 @@ const PayrollRunView = () => {
     })
     groups.set('other', [])
 
-    employees.forEach((e: any) => {
+    employees.forEach((e) => {
       const parent = departmentConfig.find(p => p.subDepartments.some(sub => sub.id === e.department))
       const groupId = parent ? parent.id : 'other'
       if (groups.has(groupId)) {
@@ -202,7 +203,7 @@ const PayrollHistoryView = () => {
 
   if (selectedRunId && selectedRun) {
     // Group historical slips by department
-    const groupedSlips = new Map<string, any[]>()
+    const groupedSlips = new Map<string, PayrollSlip[]>()
     departmentConfig.forEach(d => groupedSlips.set(d.id, []))
     groupedSlips.set('other', [])
 
@@ -273,7 +274,7 @@ const PayrollHistoryView = () => {
   )
 }
 
-const HistoryRunCard = ({ run, onClick }: { run: any; onClick: () => void }) => {
+const HistoryRunCard = ({ run, onClick }: { run: PayrollRun; onClick: () => void }) => {
   const { t } = useTranslation('payroll')
   const printRef = useRef<HTMLDivElement>(null)
 
@@ -282,7 +283,7 @@ const HistoryRunCard = ({ run, onClick }: { run: any; onClick: () => void }) => 
     documentTitle: `Payslips_${run.period}`,
   })
 
-  const totals = run.slips.reduce((acc: any, s: any) => ({
+  const totals = run.slips.reduce<{ basic: number; net: number }>((acc, s) => ({
     basic: acc.basic + s.basicSalary,
     net: acc.net + s.netSalary
   }), { basic: 0, net: 0 })

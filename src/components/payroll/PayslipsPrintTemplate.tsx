@@ -6,7 +6,7 @@ import { PayrollSlip } from "@/types"
 import { formatCurrency } from "@/lib/utils"
 
 interface PayslipsPrintTemplateProps {
-    slips: (PayrollSlip & { expand?: { employeeId: { name: string; jobTitle: string } } })[]
+    slips: PayrollSlip[]
     period: string
 }
 
@@ -57,8 +57,8 @@ export const PayslipsPrintTemplate = forwardRef<HTMLDivElement, PayslipsPrintTem
                             mx="auto" // For debugging if we remove display:none
                         >
                             {pageSlips.map((slip, index) => {
-                                const employeeName = slip.expand?.employeeId?.name || "Unknown Employee"
-                                const jobTitle = slip.expand?.employeeId?.jobTitle || ""
+                                const employeeName = slip.employeeName || "Unknown Employee"
+                                const jobTitle = slip.employeeJobTitle || ""
 
                                 const overtimeAmount = slip.overtimeAmount ?? 0
                                 const bonusAmount = slip.bonusAmount ?? 0

@@ -24,10 +24,11 @@ export const Login = () => {
                 description: t('login.toasts.successDescription')
             });
             navigate('/');
-        } catch (error: any) {
+        } catch (error: unknown) {
+            const message = error instanceof Error ? error.message : t('login.toasts.errorDescription')
             toaster.error({
                 title: t('login.toasts.errorTitle'),
-                description: error.message || t('login.toasts.errorDescription')
+                description: message
             });
         }
     };

@@ -143,14 +143,13 @@ export const HistoricalDepartmentPayrollGroup = ({
 
                                 <Stack gap="2" p="3" bg="gray.50/50">
                                     {group.slips.map(slip => {
-                                        const emp = (slip as any).expand?.employeeId
                                         const additions = slip.overtimeAmount + slip.bonusAmount
                                         const deductions = slip.deductionAmount + slip.advanceAmount
                                         return (
                                             <PayrollEmployeeCard
                                                 key={slip.id}
-                                                name={emp?.name || '---'}
-                                                jobTitle={emp?.jobTitle || '---'}
+                                                name={slip.employeeName || '---'}
+                                                jobTitle={slip.employeeJobTitle || '---'}
                                                 basicSalary={slip.basicSalary}
                                                 additions={additions}
                                                 deductions={deductions}

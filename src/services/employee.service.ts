@@ -1,6 +1,7 @@
 import { pb } from '@/lib/pocketbase'
 import { Collections } from '@/types/pocketbase-types'
 import { Employee } from '@/types'
+import { EmployeesRecord } from '@/types/pocketbase-types'
 
 // Map PocketBase response to UI Employee type if needed, or use directly
 // For now, we will use the generated types directly in the app to avoid mapping overhead
@@ -13,11 +14,11 @@ export const employeeService = {
     })
   },
 
-  create: async (data: any): Promise<Employee> => {
+  create: async (data: Partial<EmployeesRecord>): Promise<Employee> => {
     return await pb.collection(Collections.Employees).create(data)
   },
 
-  update: async (id: string, data: any): Promise<Employee> => {
+  update: async (id: string, data: Partial<EmployeesRecord>): Promise<Employee> => {
     return await pb.collection(Collections.Employees).update(id, data)
   },
 

@@ -1,19 +1,19 @@
 import { Box, Heading, HStack, SimpleGrid, Card as ChakraCard, Badge, Flex, Icon, Text } from "@chakra-ui/react"
 import { useTranslation } from "react-i18next"
 import { useDashboardStats } from "@/hooks/useDashboardStats"
-import { LuWallet, LuUsers, LuTrendingUp } from "react-icons/lu"
+import { LuWallet, LuUsers, LuTrendingDown, LuTrendingUp } from "react-icons/lu"
 import { formatCurrency } from "@/lib/utils"
 import { useQuery } from "@tanstack/react-query"
 import { employeeService } from "@/services/employee.service"
 
 export const Dashboard = () => {
   const { t } = useTranslation(['dashboard'])
-  const { currentNetTotal, percentChange, activeCount } = useDashboardStats()
+  const { currentNetTotal, percentChange, activeCount, currentDeductionRate, deductionRateChange } = useDashboardStats()
 
   const { data: employees = [] } = useQuery({
     queryKey: ['employees'],
     queryFn: employeeService.getAll,
-    select: (data) => data as unknown as import("@/types").Employee[]
+    select: (data) => data.filter(e => !e.isArchived)
   })
 
   // undefined = still loading, null = confirmed no previous run, number = delta
@@ -22,6 +22,16 @@ export const Dashboard = () => {
     : percentChange === null
       ? t('stats.firstPayout')
       : t('stats.sinceLast', { value: percentChange >= 0 ? `+${percentChange.toFixed(1)}` : percentChange.toFixed(1) })
+
+  // Deduction rate: inverted color logic (higher = worse = red)
+  const deductionHelpText = deductionRateChange === undefined
+    ? undefined
+    : deductionRateChange === null
+      ? t('noDeductions')
+      : t('sinceLastDeduction', { value: deductionRateChange >= 0 ? `+${deductionRateChange.toFixed(2)}` : deductionRateChange.toFixed(2) })
+  const deductionTrendColor = typeof deductionRateChange === 'number'
+    ? (deductionRateChange <= 0 ? 'green' : 'red')
+    : 'gray'
 
   return (
     <Box spaceY="8">
@@ -46,11 +56,11 @@ export const Dashboard = () => {
           trendColor="gray"
         />
         <StatCard
-          label={t('stats.avgPerformance')}
-          value="—"
-          helpText={t('stats.performanceTrend')}
-          icon={LuTrendingUp}
-          trendColor="gray"
+          label={t('deductionRateLabel')}
+          value={`${currentDeductionRate.toFixed(1)}%`}
+          helpText={deductionHelpText}
+          icon={LuTrendingDown}
+          trendColor={deductionTrendColor}
         />
       </SimpleGrid>
 
@@ -61,7 +71,7 @@ export const Dashboard = () => {
         </HStack>
 
         <HStack overflowX="auto" gap="6" pb="4" css={{ '&::-webkit-scrollbar': { display: 'none' } }}>
-          {employees.filter(e => !e.isArchived).slice(0, 5).map(emp => (
+          {employees.slice(0, 5).map(emp => (
             <EmployeeCard key={emp.id} employee={emp} />
           ))}
         </HStack>
@@ -70,7 +80,18 @@ export const Dashboard = () => {
   )
 }
 
-const StatCard = ({ label, value, helpText, icon, trendColor }: any) => (
+import type { IconType } from "react-icons"
+
+interface StatCardProps {
+  label: string
+  value: string | number
+  helpText?: string
+  icon: IconType
+  trend?: "up" | "down"
+  trendColor: "green" | "red" | "gray"
+}
+
+const StatCard = ({ label, value, helpText, icon, trendColor }: StatCardProps) => (
   <ChakraCard.Root size="lg" shadow="sm" borderRadius="2xl" border="1px solid" borderColor="gray.100" bg="white">
     <ChakraCard.Body>
       <Flex justify="space-between" align="start">
@@ -91,7 +112,9 @@ const StatCard = ({ label, value, helpText, icon, trendColor }: any) => (
   </ChakraCard.Root>
 )
 
-const EmployeeCard = ({ employee }: any) => {
+import { Employee } from "@/types"
+
+const EmployeeCard = ({ employee }: { employee: Employee }) => {
   const { t } = useTranslation(['dashboard'])
   return (
     <ChakraCard.Root minW="340px" shadow="sm" borderRadius="2xl" border="1px solid" borderColor="gray.100" overflow="hidden" bg="white">

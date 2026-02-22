@@ -5,8 +5,9 @@ import {
   PayrollRunsResponse,
   PayrollSlipsResponse,
   UsersResponse,
-  UsersRecord
-} from './pocketbase-types-manual'
+  UsersRecord,
+  EmployeeScores,
+} from './pocketbase-types'
 
 export type {
   EmployeesResponse,
@@ -15,10 +16,11 @@ export type {
   PayrollRunsResponse,
   PayrollSlipsResponse,
   UsersResponse,
-  UsersRecord
+  UsersRecord,
+  EmployeeScores,
 }
 
-export type Employee = EmployeesResponse
+export type Employee = EmployeesResponse<EmployeeScores>
 
 export type Department = DepartmentsResponse
 
@@ -34,6 +36,6 @@ export type PayrollRun = Omit<PayrollRunsResponse, 'slips'> & {
 export type PayrollSlip = Omit<PayrollSlipsResponse, 'transactions'> & {
   transactions: Transaction[]
   employeeName?: string // Optional helper from frontend
+  employeeJobTitle?: string // Optional helper from frontend
 }
 
-export type User = UsersResponse

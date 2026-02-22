@@ -2,9 +2,10 @@ import { useQuery } from '@tanstack/react-query'
 import { departmentService } from '@/services/department.service'
 import { useMemo } from 'react'
 import type { DepartmentConfig } from '@/lib/departments'
+import { DepartmentsResponse } from '@/types'
 
 export const useDepartments = () => {
-    const { data: departments = [], isLoading } = useQuery({
+    const { data: departments = [], isLoading } = useQuery<DepartmentsResponse[]>({
         queryKey: ['departments'],
         queryFn: departmentService.getAll,
         staleTime: Infinity // Departments rarely change
@@ -17,10 +18,10 @@ export const useDepartments = () => {
         // 1. Find root departments (type=structural usually, or no parentId)
         // Our seed used type=structural for roots.
 
-        const rootDepts = departments.filter((d: any) => d.type === 'structural')
-        const subDepts = departments.filter((d: any) => d.type === 'functional')
+        const rootDepts = departments.filter((d) => d.type === 'structural')
+        const subDepts = departments.filter((d) => d.type === 'functional')
 
-        return rootDepts.map((root: any) => {
+        return rootDepts.map((root) => {
             // Find simpler way to map ID? 
             // Our seed didn't preserve IDs like "engineering". 
             // We can match by name with static config to get colors?
@@ -28,8 +29,8 @@ export const useDepartments = () => {
             const colorPalette = (root as any).colorPalette || 'gray'
 
             const subs = subDepts
-                .filter((sub: any) => sub.parentId === root.id)
-                .map((sub: any) => ({
+                .filter((sub) => sub.parentId === root.id)
+                .map((sub) => ({
                     id: sub.id,
                     label: sub.name
                 }))

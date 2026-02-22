@@ -39,8 +39,10 @@ import {
   LuTrash2,
 } from "react-icons/lu"
 import { TransactionCategory, Transaction } from "@/types"
+import { TransactionsCategoryOptions } from "@/types/pocketbase-types"
 import { formatCurrency } from "@/lib/utils"
 import { SegmentGroup, IconButton } from "@chakra-ui/react"
+import type { IconType } from "react-icons"
 
 interface TransactionDrawerProps {
   open: boolean
@@ -65,7 +67,7 @@ const INITIAL_STAGED: StagedData = {
 
 export const TransactionDrawer = ({ open, onOpenChange, employeeIds, onSuccess }: TransactionDrawerProps) => {
   const { t } = useTranslation('payroll')
-  const [activeCategory, setActiveCategory] = useState<TransactionCategory>("overtime")
+  const [activeCategory, setActiveCategory] = useState<TransactionsCategoryOptions>(TransactionsCategoryOptions.overtime)
   const queryClient = useQueryClient()
 
   // Staged State
@@ -120,7 +122,7 @@ export const TransactionDrawer = ({ open, onOpenChange, employeeIds, onSuccess }
   // Reset state when opening
   useEffect(() => {
     if (open) {
-      setActiveCategory("overtime")
+      setActiveCategory(TransactionsCategoryOptions.overtime)
       setStaged(JSON.parse(JSON.stringify(INITIAL_STAGED)))
     }
   }, [open])
@@ -146,14 +148,14 @@ export const TransactionDrawer = ({ open, onOpenChange, employeeIds, onSuccess }
       if (data.amount > 0) {
         const type = getType(cat as TransactionCategory)
         const baseTx = {
-          category: cat,
+          category: cat as TransactionCategory,
           type,
           unit: data.unit,
           amount: data.amount,
-          reason: (data as any).reason,
+          reason: cat === 'deduction' ? (data as StagedData['deduction']).reason : undefined,
           date: new Date().toISOString(),
           isClosed: false
-        } as unknown as Partial<Transaction> // Type assertion needed for mixed fields
+        } as Partial<Transaction>
 
         employeeIds.forEach(id => {
           transactionsToCreate.push({
@@ -186,7 +188,7 @@ export const TransactionDrawer = ({ open, onOpenChange, employeeIds, onSuccess }
         amount: data.amount,
         employeeId: singleEmployee.id,
         isClosed: false
-      })) as any[]
+      })) as unknown as Transaction[]
 
     return payrollService.calculateSlip(singleEmployee, [...existingTransactions, ...stagedTransactions])
   }, [singleEmployee, staged, existingTransactions])
@@ -323,32 +325,32 @@ export const TransactionDrawer = ({ open, onOpenChange, employeeIds, onSuccess }
                   <Heading size="sm" mb="6" color="gray.700">{t('dialog.selectType')}</Heading>
                   <Grid templateColumns="repeat(4, 1fr)" gap="4">
                     <TypeButton
-                      active={activeCategory === 'overtime'}
-                      onClick={() => setActiveCategory('overtime')}
+                      active={activeCategory === TransactionsCategoryOptions.overtime}
+                      onClick={() => setActiveCategory(TransactionsCategoryOptions.overtime)}
                       icon={LuClock}
                       label={t('categories.overtime')}
                       color="green"
                       badgeCount={staged.overtime.amount > 0 ? staged.overtime.amount : undefined}
                     />
                     <TypeButton
-                      active={activeCategory === 'deduction'}
-                      onClick={() => setActiveCategory('deduction')}
+                      active={activeCategory === TransactionsCategoryOptions.deduction}
+                      onClick={() => setActiveCategory(TransactionsCategoryOptions.deduction)}
                       icon={LuTrendingDown}
                       label={t('categories.deduction')}
                       color="red"
                       badgeCount={staged.deduction.amount > 0 ? staged.deduction.amount : undefined}
                     />
                     <TypeButton
-                      active={activeCategory === 'bonus'}
-                      onClick={() => setActiveCategory('bonus')}
+                      active={activeCategory === TransactionsCategoryOptions.bonus}
+                      onClick={() => setActiveCategory(TransactionsCategoryOptions.bonus)}
                       icon={LuAward}
                       label={t('categories.bonus')}
                       color="blue"
                       badgeCount={staged.bonus.amount > 0 ? 1 : undefined} // Just show a badge if amount > 0
                     />
                     <TypeButton
-                      active={activeCategory === 'advance'}
-                      onClick={() => setActiveCategory('advance')}
+                      active={activeCategory === TransactionsCategoryOptions.advance}
+                      onClick={() => setActiveCategory(TransactionsCategoryOptions.advance)}
                       icon={LuWallet}
                       label={t('categories.advance')}
                       color="orange"
@@ -365,7 +367,7 @@ export const TransactionDrawer = ({ open, onOpenChange, employeeIds, onSuccess }
                         <SegmentGroup.Root
                           size="sm"
                           value={staged[activeCategory as 'overtime' | 'deduction'].unit}
-                          onValueChange={(e) => updateStaged(activeCategory as any, { unit: e.value as any })}
+                          onValueChange={(e) => updateStaged(activeCategory as 'overtime' | 'deduction', { unit: e.value as 'hours' | 'days' })}
                         >
                           <SegmentGroup.Indicator />
                           <SegmentGroup.Item value="hours">
@@ -425,7 +427,7 @@ export const TransactionDrawer = ({ open, onOpenChange, employeeIds, onSuccess }
                         : t('preview.impactDescription', {
                           category: t(`categories.${activeCategory}`),
                           amount: staged[activeCategory].unit === 'cash' ? formatCurrency(staged[activeCategory].amount) : staged[activeCategory].amount,
-                          unit: staged[activeCategory].unit === 'cash' ? '' : t(`units.${(staged[activeCategory] as any).unit}`)
+                          unit: staged[activeCategory].unit === 'cash' ? '' : t(`units.${staged[activeCategory].unit}`)
                         })}
                     </Text>
                   </HStack>
@@ -503,7 +505,7 @@ export const TransactionDrawer = ({ open, onOpenChange, employeeIds, onSuccess }
 interface TypeButtonProps {
   active: boolean
   onClick: () => void
-  icon: any
+  icon: IconType
   label: string
   color: string
   badgeCount?: number

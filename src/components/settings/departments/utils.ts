@@ -1,4 +1,4 @@
-import { DepartmentsResponse } from "@/types/pocketbase-types-manual"
+import { DepartmentsResponse } from "@/types/pocketbase-types"
 import { DepartmentNode } from "./types"
 
 export function flatRecordsToTree(records: DepartmentsResponse[]): DepartmentNode[] {

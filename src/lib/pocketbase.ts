@@ -1,5 +1,5 @@
 import PocketBase from 'pocketbase';
-import { TypedPocketBase } from '@/types/pocketbase-types-manual';
+import { TypedPocketBase } from '@/types/pocketbase-types';
 
 export type { RecordModel } from 'pocketbase';
 

@@ -20,6 +20,7 @@ import { SelectRoot, SelectTrigger, SelectValueText, SelectContent, SelectItemGr
 
 import { DepartmentGroup } from "@/components/employees/DepartmentGroup"
 import { Employee } from "@/types"
+import { EmployeesRecord } from "@/types/pocketbase-types"
 import { TransactionDrawer } from "@/components/transactions/TransactionDrawer"
 import { AddEmployeeForm } from "@/components/employees/AddEmployeeForm"
 import { useDepartments } from "@/hooks/useDepartments"
@@ -37,7 +38,7 @@ export const Employees = () => {
 
   // Mutations
   const updateMutation = useMutation({
-    mutationFn: ({ id, data }: { id: string, data: any }) => employeeService.update(id, data),
+    mutationFn: ({ id, data }: { id: string, data: Partial<EmployeesRecord> }) => employeeService.update(id, data),
     onSuccess: () => {
       queryClient.invalidateQueries({ queryKey: ['employees'] })
       toaster.create({ title: t('toast.restored'), type: "success" })
@@ -70,7 +71,7 @@ export const Employees = () => {
 
   // Filter Logic
   const filteredEmployees = useMemo(() => {
-    return employees.filter((e: any) => {
+    return employees.filter((e) => {
       // 1. Status Filter
       const statusMatch = viewMode === 'archived' ? e.isArchived : !e.isArchived
       if (!statusMatch) return false
@@ -102,7 +103,7 @@ export const Employees = () => {
     })
     groups.set('other', [])
 
-    filteredEmployees.forEach((e: any) => {
+    filteredEmployees.forEach((e) => {
       // Find parent department based on sub-department match
       const parent = departmentConfig.find(p => p.subDepartments.some(sub => sub.id === e.department))
       const groupId = parent ? parent.id : 'other'

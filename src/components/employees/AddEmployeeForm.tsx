@@ -9,6 +9,14 @@ import { toaster } from "@/components/ui/toaster"
 import { useDepartments } from "@/hooks/useDepartments"
 import type { DepartmentConfig } from "@/lib/departments"
 import { Field } from "@/components/ui/field"
+import type { EmployeesRecord, EmployeeScores } from "@/types/pocketbase-types"
+import { EmployeesGradeOptions } from "@/types/pocketbase-types"
+
+type EmployeeFormData = Pick<EmployeesRecord,
+  'name' | 'email' | 'phone' | 'department' | 'jobTitle' | 'monthlySalary' | 'nationalId' | 'workHours'
+> & {
+  scores: EmployeeScores
+}
 
 interface AddEmployeeFormProps {
   onSuccess: () => void
@@ -18,7 +26,7 @@ interface AddEmployeeFormProps {
 export const AddEmployeeForm = ({ onSuccess, initialData }: AddEmployeeFormProps) => {
   const { t } = useTranslation('employees')
   const defaultGradeScore = initialData?.grade === 'Excellent' ? 90 : initialData?.grade === 'Good' ? 75 : initialData?.grade === 'Bad' ? 50 : 80;
-  const [formData, setFormData] = useState({
+  const [formData, setFormData] = useState<EmployeeFormData>({
     name: initialData?.name || '',
     email: initialData?.email || '',
     phone: initialData?.phone || '',
@@ -48,11 +56,11 @@ export const AddEmployeeForm = ({ onSuccess, initialData }: AddEmployeeFormProps
     return createListCollection({ items })
   }, [departmentConfig])
 
-  const calculateGrade = (p: number, d: number, r: number) => {
+  const calculateGrade = (p: number, d: number, r: number): EmployeesGradeOptions => {
     const avg = (p + d + r) / 3
-    if (avg >= 85) return 'Excellent'
-    if (avg >= 70) return 'Good'
-    return 'Bad'
+    if (avg >= 85) return EmployeesGradeOptions.Excellent
+    if (avg >= 70) return EmployeesGradeOptions.Good
+    return EmployeesGradeOptions.Bad
   }
 
   const handleSubmit = async (e: FormEvent) => {
@@ -62,13 +70,13 @@ export const AddEmployeeForm = ({ onSuccess, initialData }: AddEmployeeFormProps
     try {
       if (initialData?.id) {
         await employeeService.update(initialData.id, {
-          ...formData as any,
+          ...formData,
           grade
         })
         toaster.create({ title: t('toast.updated', { defaultValue: 'Employee updated' }), type: "success" })
       } else {
         await employeeService.create({
-          ...formData as any,
+          ...formData,
           grade
         })
         toaster.create({ title: t('toast.created'), type: "success" })

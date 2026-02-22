@@ -5,10 +5,11 @@
     "totalPayroll": "إجمالي الرواتب",
     "sinceLast": "{{value}}% منذ آخر دفعة",
     "firstPayout": "أول دفعة",
-    "activeEmployees": "الموظفون النشطون",
-    "avgPerformance": "متوسط الأداء",
-    "performanceTrend": "إنتاجية عالية"
+    "activeEmployees": "الموظفون النشطون"
   },
+  "deductionRateLabel": "نسبة الاستقطاعات",
+  "sinceLastDeduction": "{{value}}% منذ الشهر الماضي",
+  "noDeductions": "لا توجد استقطاعات هذا الشهر",
   "sections": {
     "teamOverview": "نظرة عامة على الفريق"
   },

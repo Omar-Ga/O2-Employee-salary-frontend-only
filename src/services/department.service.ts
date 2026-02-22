@@ -1,5 +1,5 @@
 import { pb } from '@/lib/pocketbase'
-import { Collections } from '@/types/pocketbase-types-manual'
+import { Collections, DepartmentsRecord } from '@/types/pocketbase-types'
 import { DepartmentsResponse } from '@/types'
 import { ClientResponseError } from 'pocketbase'
 
@@ -27,7 +27,7 @@ export const departmentService = {
         }
     },
 
-    create: async (data: any): Promise<DepartmentsResponse> => {
+    create: async (data: Partial<DepartmentsRecord>): Promise<DepartmentsResponse> => {
         try {
             return await pb.collection(Collections.Departments).create(data)
         } catch (error) {
@@ -35,7 +35,7 @@ export const departmentService = {
         }
     },
 
-    update: async (id: string, data: any): Promise<DepartmentsResponse> => {
+    update: async (id: string, data: Partial<DepartmentsRecord>): Promise<DepartmentsResponse> => {
         try {
             return await pb.collection(Collections.Departments).update(id, data)
         } catch (error) {

@@ -49,6 +49,39 @@ export const useDashboardStats = () => {
         return ((currentNetTotal - lastClosed.total) / lastClosed.total) * 100
     }, [currentNetTotal, lastClosed, histLoading])
 
+    // --- Deduction Rate ---
+    // currentDeductionTotal: sum of all open-month deduction + advance transactions (cash equivalent)
+    const currentDeductionTotal = useMemo(() => {
+        return activeEmployees.reduce((sum, emp) => {
+            const empTx = transactions.filter((t: Transaction) => t.employeeId === emp.id)
+            const slip = payrollService.calculateSlip(emp, empTx)
+            return sum + slip.deductionAmount + slip.advanceAmount
+        }, 0)
+    }, [activeEmployees, transactions])
+
+    // currentGross: sum of base salaries — the stable denominator
+    const currentGross = useMemo(
+        () => activeEmployees.reduce((sum, emp) => sum + emp.monthlySalary, 0),
+        [activeEmployees]
+    )
+
+    // currentDeductionRate: percentage of gross payroll lost to deductions/advances
+    const currentDeductionRate = useMemo(
+        () => (currentGross > 0 ? (currentDeductionTotal / currentGross) * 100 : 0),
+        [currentDeductionTotal, currentGross]
+    )
+
+    // deductionRateChange: percentage-POINT delta vs. last closed run
+    //  • undefined → still loading
+    //  • null      → no historical data available
+    //  • number    → delta in percentage points (e.g. +1.5 means rate went up 1.5pp)
+    const deductionRateChange = useMemo(() => {
+        if (histLoading) return undefined
+        if (!lastClosed || lastClosed.grossTotal === 0) return null
+        const historicRate = (lastClosed.deductionTotal / lastClosed.grossTotal) * 100
+        return currentDeductionRate - historicRate
+    }, [currentDeductionRate, lastClosed, histLoading])
+
     return {
         currentNetTotal,
         lastNetTotal: lastClosed?.total ?? null,
@@ -56,6 +89,8 @@ export const useDashboardStats = () => {
         // undefined = loading, null = no previous run, number = actual delta
         percentChange,
         activeCount: activeEmployees.length,
+        currentDeductionRate,
+        deductionRateChange,
         isLoading: empLoading || txLoading || histLoading
     }
 }

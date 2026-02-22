@@ -1,6 +1,6 @@
 import { Box, Container, Heading, Text, Icon, Grid, GridItem, Card, Stack } from "@chakra-ui/react"
 import { NavLink, Outlet } from "react-router-dom"
-import { LuInfo, LuBuilding, LuUsers, LuFileOutput, LuFileInput, LuSettings } from "react-icons/lu"
+import { LuInfo, LuBuilding, LuFileOutput, LuFileInput, LuSettings } from "react-icons/lu"
 import { useTranslation } from "react-i18next"
 import { useMemo } from "react"
 
@@ -12,7 +12,6 @@ export const Settings = () => {
       title: t('navigation.organization'),
       items: [
         { name: t('navigation.departments'), path: "departments", icon: LuBuilding },
-        { name: t('navigation.users'), path: "users", icon: LuUsers },
       ]
     },
     {
@@ -34,7 +33,7 @@ export const Settings = () => {
   return (
     <Box bg="gray.50" minH="calc(100vh - 64px)">
       <Container maxW="container.xl" py={{ base: 6, md: 10 }}>
-        
+
         {/* Page Header */}
         <Box mb={10}>
           <Heading size="3xl" fontWeight="bold" letterSpacing="-0.03em" color="gray.900">
@@ -46,19 +45,19 @@ export const Settings = () => {
         </Box>
 
         <Grid templateColumns={{ base: "1fr", lg: "280px 1fr" }} gap={{ base: 8, lg: 12 }} alignItems="start">
-          
+
           {/* Navigation Sidebar */}
           <GridItem as="nav">
             <Stack gap={8}>
               {tabGroups.map((group) => (
                 <Box key={group.title}>
-                  <Text 
-                    fontSize="xs" 
-                    fontWeight="bold" 
-                    textTransform="uppercase" 
-                    letterSpacing="wider" 
-                    color="gray.400" 
-                    mb={3} 
+                  <Text
+                    fontSize="xs"
+                    fontWeight="bold"
+                    textTransform="uppercase"
+                    letterSpacing="wider"
+                    color="gray.400"
+                    mb={3}
                     px={3}
                   >
                     {group.title}
@@ -87,9 +86,9 @@ export const Settings = () => {
                               color: "oxygen.600",
                             }}
                           >
-                            <Icon 
-                              as={tab.icon} 
-                              boxSize={5} 
+                            <Icon
+                              as={tab.icon}
+                              boxSize={5}
                               color={isActive ? "oxygen.500" : "gray.400"}
                               _groupHover={{ color: "oxygen.500" }}
                               transition="color 0.2s"
@@ -97,16 +96,16 @@ export const Settings = () => {
                             <Text fontWeight={isActive ? "semibold" : "medium"} fontSize="sm">
                               {tab.name}
                             </Text>
-                            
+
                             {/* Active Indicator Dot */}
                             {isActive && (
-                              <Box 
-                                position="absolute" 
-                                right={3} 
-                                w={1.5} 
-                                h={1.5} 
-                                borderRadius="full" 
-                                bg="oxygen.500" 
+                              <Box
+                                position="absolute"
+                                right={3}
+                                w={1.5}
+                                h={1.5}
+                                borderRadius="full"
+                                bg="oxygen.500"
                               />
                             )}
                           </Box>
@@ -117,30 +116,30 @@ export const Settings = () => {
                 </Box>
               ))}
             </Stack>
-            
+
             {/* Contextual Footer Info */}
             <Box mt={10} px={3}>
               <Box p={4} bg="oxygen.50" borderRadius="lg" border="1px dashed" borderColor="oxygen.200">
-                 <Text fontSize="xs" color="oxygen.800" fontWeight="semibold" mb={1}>{t('footer.appName')}</Text>
-                 <Text fontSize="xs" color="oxygen.700">{t('footer.version')}</Text>
+                <Text fontSize="xs" color="oxygen.800" fontWeight="semibold" mb={1}>{t('footer.appName')}</Text>
+                <Text fontSize="xs" color="oxygen.700">{t('footer.version')}</Text>
               </Box>
             </Box>
           </GridItem>
 
           {/* Main Content Area */}
           <GridItem minW={0} w="full">
-             <Card.Root 
-                bg="white" 
-                borderRadius="2xl" 
-                borderColor="gray.200"
-                shadow="sm"
-                overflow="hidden"
-                minH="600px"
-             >
-                <Card.Body p={{ base: 6, md: 10 }}>
-                   <Outlet />
-                </Card.Body>
-             </Card.Root>
+            <Card.Root
+              bg="white"
+              borderRadius="2xl"
+              borderColor="gray.200"
+              shadow="sm"
+              overflow="hidden"
+              minH="600px"
+            >
+              <Card.Body p={{ base: 6, md: 10 }}>
+                <Outlet />
+              </Card.Body>
+            </Card.Root>
           </GridItem>
 
         </Grid>

@@ -6,6 +6,7 @@ import { useQuery, useMutation, useQueryClient } from "@tanstack/react-query"
 import { Tree, TreeApi } from "react-arborist"
 
 import { departmentService } from "@/services/department.service"
+import { DepartmentsRecord, DepartmentsTypeOptions } from "@/types/pocketbase-types"
 import { DepartmentNode } from "./types"
 import { flatRecordsToTree } from "./utils"
 import { DepartmentItem } from "./DepartmentItem"
@@ -44,12 +45,12 @@ export const DepartmentsTab = () => {
 
   const createMutation = useMutation({
     mutationFn: async ({ name, parentId, type }: { name: string, parentId?: string, type: string }) => {
-      const payload: any = { name, type }
+      const payload: Partial<DepartmentsRecord> = { name, type: type as DepartmentsRecord['type'] }
       if (parentId) payload.parentId = parentId
       return await departmentService.create(payload)
     },
     onSuccess: invalidate,
-    onError: (err: any) => toaster.create({ title: t('errors.create') || "Error", description: err.message, type: "error" })
+    onError: (err: Error) => toaster.create({ title: t('errors.create') || "Error", description: err.message, type: "error" })
   })
 
   const renameMutation = useMutation({
@@ -57,7 +58,7 @@ export const DepartmentsTab = () => {
       return await departmentService.update(id, { name })
     },
     onSuccess: invalidate,
-    onError: (err: any) => toaster.create({ title: t('errors.update') || "Error", description: err.message, type: "error" })
+    onError: (err: Error) => toaster.create({ title: t('errors.update') || "Error", description: err.message, type: "error" })
   })
 
   const deleteMutation = useMutation({
@@ -67,7 +68,7 @@ export const DepartmentsTab = () => {
     onSuccess: () => {
       invalidate()
     },
-    onError: (err: any) => toaster.create({ title: t('errors.delete') || "Error", description: err.message, type: "error" })
+    onError: (err: Error) => toaster.create({ title: t('errors.delete') || "Error", description: err.message, type: "error" })
   })
 
   // --- TREE EVENTS ---
@@ -127,7 +128,7 @@ export const DepartmentsTab = () => {
     if (node && node.children) {
       for (const child of node.children) {
         // PocketBase handles removing a relation with a null value rather than an empty string
-        await departmentService.update(child.id, { parentId: null, type: "structural" })
+        await departmentService.update(child.id, { parentId: null as unknown as string, type: DepartmentsTypeOptions.structural })
       }
     }
 

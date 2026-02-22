@@ -1,18 +1,19 @@
-import { 
-  Box, 
-  Heading, 
-  Text, 
-  Grid, 
-  Stack, 
-  IconButton, 
-  Flex, 
-  Separator, 
-  Icon 
+import {
+  Box,
+  Heading,
+  Text,
+  Grid,
+  Stack,
+  IconButton,
+  Flex,
+  Separator,
+  Icon
 } from "@chakra-ui/react"
 import { LuCopy, LuCheck, LuMail, LuPhone, LuMapPin, LuBuilding, LuFileText } from "react-icons/lu"
 import { toaster } from "@/components/ui/toaster"
 import { useState } from "react"
 import { useTranslation } from "react-i18next"
+import type { IconType } from "react-icons"
 
 const CopyButton = ({ value, label }: { value: string, label: string }) => {
   const [hasCopied, setHasCopied] = useState(false)
@@ -43,22 +44,22 @@ const CopyButton = ({ value, label }: { value: string, label: string }) => {
   )
 }
 
-const DetailRow = ({ 
-  label, 
-  value, 
-  icon, 
-  canCopy = false 
-}: { 
-  label: string, 
-  value: string, 
-  icon: any, 
-  canCopy?: boolean 
+const DetailRow = ({
+  label,
+  value,
+  icon,
+  canCopy = false
+}: {
+  label: string,
+  value: string,
+  icon: IconType,
+  canCopy?: boolean
 }) => (
-  <Flex 
-    direction={{ base: "column", sm: "row" }} 
-    py={4} 
-    borderBottomWidth="1px" 
-    borderColor="gray.100" 
+  <Flex
+    direction={{ base: "column", sm: "row" }}
+    py={4}
+    borderBottomWidth="1px"
+    borderColor="gray.100"
     _last={{ borderBottomWidth: 0 }}
     align={{ base: "start", sm: "center" }}
     justify="space-between"
@@ -71,12 +72,12 @@ const DetailRow = ({
     mx={-2}
   >
     <Flex align="center" gap={4} flex={1}>
-      <Flex 
-        align="center" 
-        justify="center" 
-        boxSize={10} 
-        bg="gray.50" 
-        color="gray.500" 
+      <Flex
+        align="center"
+        justify="center"
+        boxSize={10}
+        bg="gray.50"
+        color="gray.500"
         borderRadius="full"
         borderWidth="1px"
         borderColor="gray.200"
@@ -84,19 +85,19 @@ const DetailRow = ({
         <Icon as={icon} boxSize={4} />
       </Flex>
       <Box>
-        <Text 
-          fontSize="xs" 
-          fontWeight="bold" 
-          textTransform="uppercase" 
-          letterSpacing="wider" 
+        <Text
+          fontSize="xs"
+          fontWeight="bold"
+          textTransform="uppercase"
+          letterSpacing="wider"
           color="gray.400"
           mb={0.5}
         >
           {label}
         </Text>
-        <Text 
-          fontSize="md" 
-          fontWeight="medium" 
+        <Text
+          fontSize="md"
+          fontWeight="medium"
           color="gray.800"
           fontFamily="mono" // Editorial choice for data
         >
@@ -104,7 +105,7 @@ const DetailRow = ({
         </Text>
       </Box>
     </Flex>
-    
+
     {canCopy && (
       <Box opacity={{ base: 1, sm: 0 }} _groupHover={{ opacity: 1 }} transition="opacity 0.2s">
         <CopyButton value={value} label={label} />
@@ -119,15 +120,15 @@ export const AboutTab = () => {
   return (
     <Box position="relative" css={{ isolation: "isolate" }}>
       {/* Background Watermark - Avant-Garde Detail */}
-      <Box 
-        position="absolute" 
-        right="-10%" 
-        bottom="-10%" 
-        fontSize="400px" 
-        fontWeight="bold" 
-        lineHeight="1" 
-        color="gray.900" 
-        opacity={0.02} 
+      <Box
+        position="absolute"
+        right="-10%"
+        bottom="-10%"
+        fontSize="400px"
+        fontWeight="bold"
+        lineHeight="1"
+        color="gray.900"
+        opacity={0.02}
         zIndex={-1}
         userSelect="none"
         pointerEvents="none"
@@ -139,20 +140,20 @@ export const AboutTab = () => {
       <Stack gap={10} animation="slide-fade-in 0.5s ease-out">
         {/* Header Section */}
         <Box>
-          <Text 
-            fontSize="sm" 
-            fontWeight="bold" 
-            textTransform="uppercase" 
-            letterSpacing="widest" 
-            color="oxygen.600" 
+          <Text
+            fontSize="sm"
+            fontWeight="bold"
+            textTransform="uppercase"
+            letterSpacing="widest"
+            color="oxygen.600"
             mb={2}
           >
             {t('title')}
           </Text>
-          <Heading 
-            size="5xl" 
-            fontWeight="bold" 
-            letterSpacing="-0.04em" 
+          <Heading
+            size="5xl"
+            fontWeight="bold"
+            letterSpacing="-0.04em"
             color="gray.900"
             lineHeight="1.1"
           >
@@ -171,22 +172,22 @@ export const AboutTab = () => {
             <Text fontSize="lg" fontWeight="semibold" mb={6} color="gray.900">
               {t('sections.contact')}
             </Text>
-            <DetailRow 
-              label={t('fields.email')} 
-              value="contact@o2mation.com" 
-              icon={LuMail} 
-              canCopy 
+            <DetailRow
+              label={t('fields.email')}
+              value="contact@o2mation.com"
+              icon={LuMail}
+              canCopy
             />
-            <DetailRow 
-              label={t('fields.phone')} 
-              value="+1 234 567 890" 
-              icon={LuPhone} 
-              canCopy 
+            <DetailRow
+              label={t('fields.phone')}
+              value="+1 234 567 890"
+              icon={LuPhone}
+              canCopy
             />
-            <DetailRow 
-              label={t('fields.headquarters')} 
-              value={t('values.headquarters')} 
-              icon={LuMapPin} 
+            <DetailRow
+              label={t('fields.headquarters')}
+              value={t('values.headquarters')}
+              icon={LuMapPin}
             />
           </Stack>
 
@@ -194,23 +195,23 @@ export const AboutTab = () => {
             <Text fontSize="lg" fontWeight="semibold" mb={6} color="gray.900">
               {t('sections.legal')}
             </Text>
-            <DetailRow 
-              label={t('fields.taxId')} 
-              value="XX-XXXXXXX" 
-              icon={LuFileText} 
-              canCopy 
+            <DetailRow
+              label={t('fields.taxId')}
+              value="XX-XXXXXXX"
+              icon={LuFileText}
+              canCopy
             />
-            <DetailRow 
-              label={t('fields.registration')} 
-              value="REG-2024-O2M-88" 
-              icon={LuBuilding} 
-              canCopy 
+            <DetailRow
+              label={t('fields.registration')}
+              value="REG-2024-O2M-88"
+              icon={LuBuilding}
+              canCopy
             />
-            <DetailRow 
-              label={t('fields.license')} 
-              value="O2-ENT-2024-LICENSE-ACTIVE" 
-              icon={LuCheck} 
-              canCopy 
+            <DetailRow
+              label={t('fields.license')}
+              value="O2-ENT-2024-LICENSE-ACTIVE"
+              icon={LuCheck}
+              canCopy
             />
           </Stack>
         </Grid>
