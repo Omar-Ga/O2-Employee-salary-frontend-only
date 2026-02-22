@@ -1,22 +1,27 @@
 import { Box, Heading, HStack, SimpleGrid, Card as ChakraCard, Badge, Flex, Icon, Text } from "@chakra-ui/react"
-import { useQuery } from "@tanstack/react-query"
 import { useTranslation } from "react-i18next"
-import { employeeService } from "@/services/employee.service"
+import { useDashboardStats } from "@/hooks/useDashboardStats"
 import { LuWallet, LuUsers, LuTrendingUp } from "react-icons/lu"
 import { formatCurrency } from "@/lib/utils"
+import { useQuery } from "@tanstack/react-query"
+import { employeeService } from "@/services/employee.service"
 
 export const Dashboard = () => {
   const { t } = useTranslation(['dashboard'])
+  const { currentNetTotal, percentChange, activeCount } = useDashboardStats()
+
   const { data: employees = [] } = useQuery({
     queryKey: ['employees'],
     queryFn: employeeService.getAll,
     select: (data) => data as unknown as import("@/types").Employee[]
   })
 
-  const totalPayroll = employees.reduce((sum, emp) => sum + emp.monthlySalary, 0)
-  const activeCount = employees.filter(e => !e.isArchived).length
-  // Mock average performance
-  const avgPerformance = 89
+  // undefined = still loading, null = confirmed no previous run, number = delta
+  const payrollHelpText = percentChange === undefined
+    ? undefined // show nothing while loading
+    : percentChange === null
+      ? t('stats.firstPayout')
+      : t('stats.sinceLast', { value: percentChange >= 0 ? `+${percentChange.toFixed(1)}` : percentChange.toFixed(1) })
 
   return (
     <Box spaceY="8">
@@ -28,26 +33,24 @@ export const Dashboard = () => {
       <SimpleGrid columns={{ base: 1, md: 3 }} gap="6">
         <StatCard
           label={t('stats.totalPayroll')}
-          value={formatCurrency(totalPayroll)}
-          helpText={t('stats.payrollTrend')}
+          value={formatCurrency(currentNetTotal)}
+          helpText={payrollHelpText}
           icon={LuWallet}
-          trend="up"
-          trendColor="green"
+          trend={typeof percentChange === 'number' ? (percentChange >= 0 ? 'up' : 'down') : undefined}
+          trendColor={typeof percentChange === 'number' ? (percentChange >= 0 ? 'green' : 'red') : 'gray'}
         />
         <StatCard
           label={t('stats.activeEmployees')}
           value={activeCount}
-          helpText={t('stats.onLeaveCount')}
           icon={LuUsers}
           trendColor="gray"
         />
         <StatCard
           label={t('stats.avgPerformance')}
-          value={`${avgPerformance}%`}
+          value="—"
           helpText={t('stats.performanceTrend')}
           icon={LuTrendingUp}
-          trend="up"
-          trendColor="green"
+          trendColor="gray"
         />
       </SimpleGrid>
 
@@ -58,7 +61,7 @@ export const Dashboard = () => {
         </HStack>
 
         <HStack overflowX="auto" gap="6" pb="4" css={{ '&::-webkit-scrollbar': { display: 'none' } }}>
-          {employees.slice(0, 5).map(emp => (
+          {employees.filter(e => !e.isArchived).slice(0, 5).map(emp => (
             <EmployeeCard key={emp.id} employee={emp} />
           ))}
         </HStack>
@@ -74,9 +77,11 @@ const StatCard = ({ label, value, helpText, icon, trendColor }: any) => (
         <Box>
           <Text color="gray.500" fontWeight="medium" mb="2">{label}</Text>
           <Text fontSize="4xl" fontWeight="bold" letterSpacing="tight" lineHeight="1" mb="2">{value}</Text>
-          <Text fontSize="sm" color={trendColor === 'green' ? "oxygen.600" : "gray.500"} fontWeight="medium">
-            {helpText}
-          </Text>
+          {helpText && (
+            <Text fontSize="sm" color={trendColor === 'green' ? "oxygen.600" : trendColor === 'red' ? "red.500" : "gray.500"} fontWeight="medium">
+              {helpText}
+            </Text>
+          )}
         </Box>
         <Box p="3" bg={trendColor === 'green' ? "oxygen.50" : "gray.50"} borderRadius="xl">
           <Icon as={icon} boxSize="6" color={trendColor === 'green' ? "oxygen.600" : "gray.500"} />
@@ -105,17 +110,17 @@ const EmployeeCard = ({ employee }: any) => {
             fontSize="xs"
             fontWeight="bold"
           >
-            {employee.isArchived ? t('onLeave') : t('active')}
+            {employee.isArchived ? t('archived') : t('active')}
           </Badge>
         </Flex>
 
         <Box mb="6">
           <HStack justify="space-between" mb="2">
             <Text fontSize="xs" fontWeight="bold" color="gray.400">{t('employee.performanceScore')}</Text>
-            <Text fontWeight="bold" fontSize="sm">{employee.scores?.performance}%</Text>
+            <Text fontWeight="bold" fontSize="sm">{employee.scores?.performance ?? '—'}%</Text>
           </HStack>
           <Box w="full" h="1.5" bg="gray.100" borderRadius="full" overflow="hidden">
-            <Box w={`${employee.scores?.performance}%`} h="full" bg="oxygen.500" borderRadius="full" />
+            <Box w={`${employee.scores?.performance ?? 0}%`} h="full" bg="oxygen.500" borderRadius="full" />
           </Box>
         </Box>
 

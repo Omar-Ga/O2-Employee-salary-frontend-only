@@ -1,15 +1,19 @@
 {
   "actions": {
     "addEmployee": "Add Employee",
+    "edit": "Edit",
+    "delete": "Delete",
     "restore": "Restore",
     "archive": "Archive",
     "create": "Create Employee",
+    "update": "Update Employee",
     "selectDepartment": "Select Department",
     "searchPlaceholder": "Search employees...",
     "filterDept": "Filter Dept"
   },
   "drawer": {
-    "title": "Add New Employee"
+    "title": "Add New Employee",
+    "editTitle": "Edit Employee"
   },
   "tabs": {
     "active": "Active Employees",
@@ -48,7 +52,8 @@
   "toast": {
     "archived": "Employee archived",
     "restored": "Employee restored",
-    "created": "Employee created"
+    "created": "Employee created",
+    "updated": "Employee updated"
   },
   "status": {
     "active": "Active",

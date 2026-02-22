@@ -1,3 +1,4 @@
+/// <reference path="../pb_data/types.d.ts" />
 migrate((app) => {
   const snapshot = [
     {
@@ -696,6 +697,21 @@ migrate((app) => {
         },
         {
           "hidden": false,
+          "id": "selectRoles001",
+          "maxSelect": 1,
+          "name": "role",
+          "presentable": false,
+          "required": false,
+          "system": false,
+          "type": "select",
+          "values": [
+            "admin",
+            "editor",
+            "viewer"
+          ]
+        },
+        {
+          "hidden": false,
           "id": "autodate2990389176",
           "name": "created",
           "onCreate": true,
@@ -773,6 +789,675 @@ migrate((app) => {
         "duration": 259200
       },
       "viewRule": "id = @request.auth.id"
+    },
+    {
+      "createRule": "@request.auth.id != ''",
+      "deleteRule": "@request.auth.id != ''",
+      "fields": [
+        {
+          "autogeneratePattern": "[a-z0-9]{15}",
+          "hidden": false,
+          "id": "text3208210256",
+          "max": 15,
+          "min": 15,
+          "name": "id",
+          "pattern": "^[a-z0-9]+$",
+          "presentable": false,
+          "primaryKey": true,
+          "required": true,
+          "system": true,
+          "type": "text"
+        },
+        {
+          "hidden": false,
+          "id": "autodate2990389176",
+          "name": "created",
+          "onCreate": true,
+          "onUpdate": false,
+          "presentable": false,
+          "system": false,
+          "type": "autodate"
+        },
+        {
+          "hidden": false,
+          "id": "autodate3332085495",
+          "name": "updated",
+          "onCreate": true,
+          "onUpdate": true,
+          "presentable": false,
+          "system": false,
+          "type": "autodate"
+        },
+        {
+          "autogeneratePattern": "",
+          "hidden": false,
+          "id": "text1579384326",
+          "max": 0,
+          "min": 0,
+          "name": "name",
+          "pattern": "",
+          "presentable": false,
+          "primaryKey": false,
+          "required": true,
+          "system": false,
+          "type": "text"
+        },
+        {
+          "hidden": false,
+          "id": "select2363381545",
+          "maxSelect": 1,
+          "name": "type",
+          "presentable": false,
+          "required": true,
+          "system": false,
+          "type": "select",
+          "values": [
+            "structural",
+            "functional"
+          ]
+        },
+        {
+          "cascadeDelete": false,
+          "collectionId": "pbc_3865025440",
+          "hidden": false,
+          "id": "relation284052718",
+          "maxSelect": 1,
+          "minSelect": 0,
+          "name": "parentId",
+          "presentable": false,
+          "required": false,
+          "system": false,
+          "type": "relation"
+        }
+      ],
+      "id": "pbc_3865025440",
+      "indexes": [],
+      "listRule": "@request.auth.id != ''",
+      "name": "departments",
+      "system": false,
+      "type": "base",
+      "updateRule": "@request.auth.id != ''",
+      "viewRule": "@request.auth.id != ''"
+    },
+    {
+      "createRule": "@request.auth.id != ''",
+      "deleteRule": "@request.auth.id != ''",
+      "fields": [
+        {
+          "autogeneratePattern": "[a-z0-9]{15}",
+          "hidden": false,
+          "id": "text3208210256",
+          "max": 15,
+          "min": 15,
+          "name": "id",
+          "pattern": "^[a-z0-9]+$",
+          "presentable": false,
+          "primaryKey": true,
+          "required": true,
+          "system": true,
+          "type": "text"
+        },
+        {
+          "hidden": false,
+          "id": "autodate2990389176",
+          "name": "created",
+          "onCreate": true,
+          "onUpdate": false,
+          "presentable": false,
+          "system": false,
+          "type": "autodate"
+        },
+        {
+          "hidden": false,
+          "id": "autodate3332085495",
+          "name": "updated",
+          "onCreate": true,
+          "onUpdate": true,
+          "presentable": false,
+          "system": false,
+          "type": "autodate"
+        },
+        {
+          "autogeneratePattern": "",
+          "hidden": false,
+          "id": "text1579384326",
+          "max": 0,
+          "min": 0,
+          "name": "name",
+          "pattern": "",
+          "presentable": false,
+          "primaryKey": false,
+          "required": true,
+          "system": false,
+          "type": "text"
+        },
+        {
+          "exceptDomains": null,
+          "hidden": false,
+          "id": "email3885137012",
+          "name": "email",
+          "onlyDomains": null,
+          "presentable": false,
+          "required": true,
+          "system": false,
+          "type": "email"
+        },
+        {
+          "autogeneratePattern": "",
+          "hidden": false,
+          "id": "text656136322",
+          "max": 0,
+          "min": 0,
+          "name": "nationalId",
+          "pattern": "",
+          "presentable": false,
+          "primaryKey": false,
+          "required": true,
+          "system": false,
+          "type": "text"
+        },
+        {
+          "autogeneratePattern": "",
+          "hidden": false,
+          "id": "text1146066909",
+          "max": 0,
+          "min": 0,
+          "name": "phone",
+          "pattern": "",
+          "presentable": false,
+          "primaryKey": false,
+          "required": true,
+          "system": false,
+          "type": "text"
+        },
+        {
+          "autogeneratePattern": "",
+          "hidden": false,
+          "id": "text807293237",
+          "max": 0,
+          "min": 0,
+          "name": "jobTitle",
+          "pattern": "",
+          "presentable": false,
+          "primaryKey": false,
+          "required": true,
+          "system": false,
+          "type": "text"
+        },
+        {
+          "cascadeDelete": false,
+          "collectionId": "pbc_3865025440",
+          "hidden": false,
+          "id": "relation3441287562",
+          "maxSelect": 1,
+          "minSelect": 0,
+          "name": "department",
+          "presentable": false,
+          "required": true,
+          "system": false,
+          "type": "relation"
+        },
+        {
+          "hidden": false,
+          "id": "number3659500371",
+          "max": null,
+          "min": null,
+          "name": "monthlySalary",
+          "onlyInt": false,
+          "presentable": false,
+          "required": true,
+          "system": false,
+          "type": "number"
+        },
+        {
+          "hidden": false,
+          "id": "number4013773738",
+          "max": null,
+          "min": null,
+          "name": "workHours",
+          "onlyInt": false,
+          "presentable": false,
+          "required": true,
+          "system": false,
+          "type": "number"
+        },
+        {
+          "hidden": false,
+          "id": "bool4206062621",
+          "name": "isArchived",
+          "presentable": false,
+          "required": false,
+          "system": false,
+          "type": "bool"
+        },
+        {
+          "hidden": false,
+          "id": "select1499115060",
+          "maxSelect": 1,
+          "name": "grade",
+          "presentable": false,
+          "required": false,
+          "system": false,
+          "type": "select",
+          "values": [
+            "Excellent",
+            "Good",
+            "Bad"
+          ]
+        },
+        {
+          "hidden": false,
+          "id": "json122697566",
+          "maxSize": 0,
+          "name": "scores",
+          "presentable": false,
+          "required": false,
+          "system": false,
+          "type": "json"
+        }
+      ],
+      "id": "pbc_3735627160",
+      "indexes": [],
+      "listRule": "@request.auth.id != ''",
+      "name": "employees",
+      "system": false,
+      "type": "base",
+      "updateRule": "@request.auth.id != ''",
+      "viewRule": "@request.auth.id != ''"
+    },
+    {
+      "createRule": "@request.auth.id != ''",
+      "deleteRule": "@request.auth.id != ''",
+      "fields": [
+        {
+          "autogeneratePattern": "[a-z0-9]{15}",
+          "hidden": false,
+          "id": "text3208210256",
+          "max": 15,
+          "min": 15,
+          "name": "id",
+          "pattern": "^[a-z0-9]+$",
+          "presentable": false,
+          "primaryKey": true,
+          "required": true,
+          "system": true,
+          "type": "text"
+        },
+        {
+          "hidden": false,
+          "id": "autodate2990389176",
+          "name": "created",
+          "onCreate": true,
+          "onUpdate": false,
+          "presentable": false,
+          "system": false,
+          "type": "autodate"
+        },
+        {
+          "hidden": false,
+          "id": "autodate3332085495",
+          "name": "updated",
+          "onCreate": true,
+          "onUpdate": true,
+          "presentable": false,
+          "system": false,
+          "type": "autodate"
+        },
+        {
+          "cascadeDelete": true,
+          "collectionId": "pbc_3735627160",
+          "hidden": false,
+          "id": "relation3184399990",
+          "maxSelect": 1,
+          "minSelect": 0,
+          "name": "employeeId",
+          "presentable": false,
+          "required": true,
+          "system": false,
+          "type": "relation"
+        },
+        {
+          "hidden": false,
+          "id": "date2862495610",
+          "max": "",
+          "min": "",
+          "name": "date",
+          "presentable": false,
+          "required": true,
+          "system": false,
+          "type": "date"
+        },
+        {
+          "hidden": false,
+          "id": "bool3316598590",
+          "name": "isClosed",
+          "presentable": false,
+          "required": false,
+          "system": false,
+          "type": "bool"
+        },
+        {
+          "hidden": false,
+          "id": "select105650625",
+          "maxSelect": 1,
+          "name": "category",
+          "presentable": false,
+          "required": true,
+          "system": false,
+          "type": "select",
+          "values": [
+            "overtime",
+            "deduction",
+            "bonus",
+            "advance"
+          ]
+        },
+        {
+          "hidden": false,
+          "id": "select2363381545",
+          "maxSelect": 1,
+          "name": "type",
+          "presentable": false,
+          "required": true,
+          "system": false,
+          "type": "select",
+          "values": [
+            "addition",
+            "deduction"
+          ]
+        },
+        {
+          "hidden": false,
+          "id": "select3703245907",
+          "maxSelect": 1,
+          "name": "unit",
+          "presentable": false,
+          "required": true,
+          "system": false,
+          "type": "select",
+          "values": [
+            "hours",
+            "days",
+            "cash"
+          ]
+        },
+        {
+          "hidden": false,
+          "id": "number2392944706",
+          "max": null,
+          "min": null,
+          "name": "amount",
+          "onlyInt": false,
+          "presentable": false,
+          "required": true,
+          "system": false,
+          "type": "number"
+        },
+        {
+          "autogeneratePattern": "",
+          "hidden": false,
+          "id": "text1001949196",
+          "max": 0,
+          "min": 0,
+          "name": "reason",
+          "pattern": "",
+          "presentable": false,
+          "primaryKey": false,
+          "required": false,
+          "system": false,
+          "type": "text"
+        }
+      ],
+      "id": "pbc_3174063690",
+      "indexes": [],
+      "listRule": "@request.auth.id != ''",
+      "name": "transactions",
+      "system": false,
+      "type": "base",
+      "updateRule": "@request.auth.id != ''",
+      "viewRule": "@request.auth.id != ''"
+    },
+    {
+      "createRule": "@request.auth.id != ''",
+      "deleteRule": "@request.auth.id != ''",
+      "fields": [
+        {
+          "autogeneratePattern": "[a-z0-9]{15}",
+          "hidden": false,
+          "id": "text3208210256",
+          "max": 15,
+          "min": 15,
+          "name": "id",
+          "pattern": "^[a-z0-9]+$",
+          "presentable": false,
+          "primaryKey": true,
+          "required": true,
+          "system": true,
+          "type": "text"
+        },
+        {
+          "hidden": false,
+          "id": "autodate2990389176",
+          "name": "created",
+          "onCreate": true,
+          "onUpdate": false,
+          "presentable": false,
+          "system": false,
+          "type": "autodate"
+        },
+        {
+          "hidden": false,
+          "id": "autodate3332085495",
+          "name": "updated",
+          "onCreate": true,
+          "onUpdate": true,
+          "presentable": false,
+          "system": false,
+          "type": "autodate"
+        },
+        {
+          "autogeneratePattern": "",
+          "hidden": false,
+          "id": "text3317178062",
+          "max": 0,
+          "min": 0,
+          "name": "period",
+          "pattern": "",
+          "presentable": false,
+          "primaryKey": false,
+          "required": true,
+          "system": false,
+          "type": "text"
+        },
+        {
+          "hidden": false,
+          "id": "date2862495610",
+          "max": "",
+          "min": "",
+          "name": "date",
+          "presentable": false,
+          "required": true,
+          "system": false,
+          "type": "date"
+        },
+        {
+          "hidden": false,
+          "id": "bool3316598590",
+          "name": "isClosed",
+          "presentable": false,
+          "required": false,
+          "system": false,
+          "type": "bool"
+        }
+      ],
+      "id": "pbc_1820502234",
+      "indexes": [],
+      "listRule": "@request.auth.id != ''",
+      "name": "payroll_runs",
+      "system": false,
+      "type": "base",
+      "updateRule": "@request.auth.id != ''",
+      "viewRule": "@request.auth.id != ''"
+    },
+    {
+      "createRule": "@request.auth.id != ''",
+      "deleteRule": "@request.auth.id != ''",
+      "fields": [
+        {
+          "autogeneratePattern": "[a-z0-9]{15}",
+          "hidden": false,
+          "id": "text3208210256",
+          "max": 15,
+          "min": 15,
+          "name": "id",
+          "pattern": "^[a-z0-9]+$",
+          "presentable": false,
+          "primaryKey": true,
+          "required": true,
+          "system": true,
+          "type": "text"
+        },
+        {
+          "hidden": false,
+          "id": "autodate2990389176",
+          "name": "created",
+          "onCreate": true,
+          "onUpdate": false,
+          "presentable": false,
+          "system": false,
+          "type": "autodate"
+        },
+        {
+          "hidden": false,
+          "id": "autodate3332085495",
+          "name": "updated",
+          "onCreate": true,
+          "onUpdate": true,
+          "presentable": false,
+          "system": false,
+          "type": "autodate"
+        },
+        {
+          "cascadeDelete": true,
+          "collectionId": "pbc_1820502234",
+          "hidden": false,
+          "id": "relation389573607",
+          "maxSelect": 1,
+          "minSelect": 0,
+          "name": "payrollRunId",
+          "presentable": false,
+          "required": true,
+          "system": false,
+          "type": "relation"
+        },
+        {
+          "cascadeDelete": false,
+          "collectionId": "pbc_3735627160",
+          "hidden": false,
+          "id": "relation3184399990",
+          "maxSelect": 1,
+          "minSelect": 0,
+          "name": "employeeId",
+          "presentable": false,
+          "required": true,
+          "system": false,
+          "type": "relation"
+        },
+        {
+          "cascadeDelete": false,
+          "collectionId": "pbc_3865025440",
+          "hidden": false,
+          "id": "relation1021062336",
+          "maxSelect": 1,
+          "minSelect": 0,
+          "name": "departmentId",
+          "presentable": false,
+          "required": true,
+          "system": false,
+          "type": "relation"
+        },
+        {
+          "hidden": false,
+          "id": "number3283352647",
+          "max": null,
+          "min": null,
+          "name": "basicSalary",
+          "onlyInt": false,
+          "presentable": false,
+          "required": false,
+          "system": false,
+          "type": "number"
+        },
+        {
+          "hidden": false,
+          "id": "number3897114357",
+          "max": null,
+          "min": null,
+          "name": "hourlyRate",
+          "onlyInt": false,
+          "presentable": false,
+          "required": false,
+          "system": false,
+          "type": "number"
+        },
+        {
+          "hidden": false,
+          "id": "number2453081432",
+          "max": null,
+          "min": null,
+          "name": "additions",
+          "onlyInt": false,
+          "presentable": false,
+          "required": false,
+          "system": false,
+          "type": "number"
+        },
+        {
+          "hidden": false,
+          "id": "number1919299738",
+          "max": null,
+          "min": null,
+          "name": "deductions",
+          "onlyInt": false,
+          "presentable": false,
+          "required": false,
+          "system": false,
+          "type": "number"
+        },
+        {
+          "hidden": false,
+          "id": "number3505982363",
+          "max": null,
+          "min": null,
+          "name": "netSalary",
+          "onlyInt": false,
+          "presentable": false,
+          "required": false,
+          "system": false,
+          "type": "number"
+        },
+        {
+          "cascadeDelete": false,
+          "collectionId": "pbc_3174063690",
+          "hidden": false,
+          "id": "relation3936885324",
+          "maxSelect": 0,
+          "minSelect": 0,
+          "name": "transactions",
+          "presentable": false,
+          "required": false,
+          "system": false,
+          "type": "relation"
+        }
+      ],
+      "id": "pbc_1131872906",
+      "indexes": [],
+      "listRule": "@request.auth.id != ''",
+      "name": "payroll_slips",
+      "system": false,
+      "type": "base",
+      "updateRule": "@request.auth.id != ''",
+      "viewRule": "@request.auth.id != ''"
     }
   ];
 

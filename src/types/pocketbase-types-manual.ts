@@ -70,9 +70,10 @@ export type PayrollSlipsRecord = {
     employeeId: string
     departmentId: string
     basicSalary: number
-    hourlyRate: number
-    additions: number
-    deductions: number
+    overtimeAmount: number
+    bonusAmount: number
+    deductionAmount: number
+    advanceAmount: number
     netSalary: number
     transactions: string[] // multiple relation
 }

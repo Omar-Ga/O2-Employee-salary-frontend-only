@@ -1,3 +1,7 @@
+---
+trigger: always_on
+---
+
 # Persistent Rules & Context
 
 ## 1. Environment & Shell
@@ -8,6 +12,10 @@
 - **Pathing**: Use absolute paths (`d:\...`) for file operations to avoid ambiguity.
 
 ## 2. PocketBase Best Practices
+
+- **Single Source of Truth (Documentation)**:
+  - ALWAYS refer to the local documentation in `documentation/pocketbase-reference` to understand PocketBase JS SDK, Web API, and Hooks.
+  - Treat these local markdown files as the absolute source of truth to avoid hallucinations about older PocketBase versions like v0.20 or v0.19.
 
 - **Skill Mandate (ABSOLUTE MANDATE)**:
   - You **MUST** read **BOTH** PocketBase skills BEFORE doing ANY work on the backend or database.
@@ -23,6 +31,9 @@
   - **ALWAYS** run `.\pb\pocketbase.exe migrate collections` after ANY schema change via the Admin UI.
   - **Source of Truth**: The `pb_migrations` folder is the source of truth for the database schema.
 - **Error Handling**: Wrap calls in standardized error handlers distinguishing `ClientResponseError` from network errors.
+- **Single Source of Truth (Documentation)**:
+  - ALWAYS refer to the local documentation in `documentation/pocketbase-reference` to understand PocketBase JS SDK, Web API, and Hooks.
+  - Treat these local markdown files as the absolute source of truth to avoid hallucinations about older PocketBase versions like v0.20 or v0.19.
 
 ## 3. Frontend Architecture (Chakra UI)
 
@@ -69,3 +80,7 @@
 - **Modular Translations**: ALWAYS keep translation files modular and specific to their parts (e.g., `login.json`, `sidebar.json`). NEVER use generic or ambiguously named files like `translation.json` or `common.json`.
 - **Machine Keys in DB**: Databases/PocketBase collections MUST store machine-readable slugs/enums (e.g., `verified`, `pending`) instead of display strings. The frontend handles the translation of these slugs.
 - **Naming Convention**: Use hierarchical keys in JSON (e.g., `dashboard.stats.total_payroll`) for better organization.
+
+## 9. pocketbase changes flow
+
+- **restart pocketbase after any edits to the db, schema or migration files** always restart pb dashboard through pocketbase.exe serve this is because pocketbase loads new migrations on startup this way you can add any new migrations AND be able to see if a migration has errors. NEVER TRY PUSHING THE MIGRATION MANUALLY ON AN ALREADY RUNNING POCKETBASE.

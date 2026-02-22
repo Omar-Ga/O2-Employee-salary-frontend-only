@@ -3,9 +3,9 @@
   "subtitle": "Manage your team, salaries, and performance.",
   "stats": {
     "totalPayroll": "Total Payroll",
-    "payrollTrend": "+2.4% from last month",
+    "sinceLast": "{{value}}% since last payout",
+    "firstPayout": "First payout",
     "activeEmployees": "Active Employees",
-    "onLeaveCount": "2 on leave",
     "avgPerformance": "Avg. Performance",
     "performanceTrend": "Top tier productivity"
   },
@@ -14,7 +14,7 @@
   },
   "viewAll": "View All",
   "active": "Active",
-  "onLeave": "On Leave",
+  "archived": "Archived",
   "details": "Details",
   "netMonthly": "Net Monthly",
   "employee": {

@@ -35,7 +35,7 @@ function App() {
           <Route path="employees" element={<Employees />} />
           <Route path="payroll" element={<Payroll />} />
           <Route path="settings" element={<Settings />}>
-            <Route index element={<Navigate to="about" replace />} />
+            <Route index element={<Navigate to="departments" replace />} />
             <Route path="about" element={<AboutTab />} />
             <Route path="departments" element={<DepartmentsTab />} />
             <Route path="users" element={<UsersTab />} />

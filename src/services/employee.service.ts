@@ -22,10 +22,16 @@ export const employeeService = {
   },
 
   softDelete: async (id: string): Promise<Employee> => {
-    return await pb.collection(Collections.Employees).update(id, { isArchived: true })
+    return await pb.collection(Collections.Employees).update(id, {
+      isArchived: true,
+      archiveDate: new Date().toISOString()
+    })
   },
 
   restore: async (id: string): Promise<Employee> => {
-    return await pb.collection(Collections.Employees).update(id, { isArchived: false })
+    return await pb.collection(Collections.Employees).update(id, {
+      isArchived: false,
+      archiveDate: ""
+    })
   }
 }

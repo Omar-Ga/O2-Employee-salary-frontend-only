@@ -4,10 +4,9 @@ import { LuChevronDown } from "react-icons/lu"
 import { useState } from "react"
 import { Employee } from "@/types"
 import { EmployeeCard } from "./EmployeeCard"
-import { DepartmentConfig } from "@/lib/departments"
 
 interface DepartmentGroupProps {
-  department: DepartmentConfig
+  department: { id: string; label: string; colorPalette?: string; subDepartments: { id: string; label: string }[] }
   employees: Employee[]
   selectedIds: string[]
   onSelectEmployee: (id: string, checked: boolean) => void
@@ -26,9 +25,20 @@ export const DepartmentGroup = ({
 
   if (employees.length === 0) return null
 
-  // Group employees by sub-department if applicable, or just list them
-  // For simplicity in this iteration, we list them all but sort by sub-department
-  const sortedEmployees = [...employees].sort((a, b) => a.department.localeCompare(b.department))
+  const subDeptGroups: { id: string; label: string; employees: Employee[] }[] = []
+
+  department.subDepartments.forEach(sub => {
+    const subEmps = employees.filter(e => e.department === sub.id)
+    if (subEmps.length > 0) {
+      subDeptGroups.push({ id: sub.id, label: sub.label, employees: subEmps })
+    }
+  })
+
+  // Catch any employees that don't match known sub-departments (e.g., if parent is 'other' or misassigned)
+  const otherEmps = employees.filter(e => !department.subDepartments.some(sub => sub.id === e.department))
+  if (otherEmps.length > 0) {
+    subDeptGroups.push({ id: 'other', label: t('tabs.other_sub', { defaultValue: 'Other' }), employees: otherEmps })
+  }
 
   return (
     <Collapsible.Root open={isOpen} onOpenChange={(e) => setIsOpen(e.open)}>
@@ -67,21 +77,37 @@ export const DepartmentGroup = ({
 
         {/* Content */}
         <Collapsible.Content>
-          <Grid templateColumns="1fr" gap="2" animation="fade-in 0.3s">
-            {sortedEmployees.map(emp => (
-              <EmployeeCard
-                key={emp.id}
-                employee={emp}
-                isSelected={selectedIds.includes(emp.id)}
-                onSelect={(c) => onSelectEmployee(emp.id, c)}
-                onEdit={() => onAction('edit', emp.id)}
-                onArchive={() => onAction('archive', emp.id)}
-                onRestore={() => onAction('restore', emp.id)}
-                onDelete={() => onAction('delete', emp.id)}
-                onClick={() => onAction('transaction', emp.id)}
-              />
+          <Box animation="fade-in 0.3s">
+            {subDeptGroups.map((group, index) => (
+              <Box key={group.id} mb={index < subDeptGroups.length - 1 ? 4 : 0}>
+                {department.id !== 'other' && (
+                  <HStack mb="2" ml="8">
+                    <Text fontSize="xs" fontWeight="bold" color="gray.400" textTransform="uppercase" letterSpacing="wider">
+                      {group.label}
+                    </Text>
+                    <Box flex="1" h="1px" bg="gray.100" ml="2" />
+                  </HStack>
+                )}
+                <Grid templateColumns="1fr" gap="2" ml={department.id !== 'other' ? "8" : "0"}>
+                  {group.employees.map(emp => (
+                    <EmployeeCard
+                      key={emp.id}
+                      employee={emp}
+                      departmentName={group.label}
+                      colorPalette={department.colorPalette || "gray"}
+                      isSelected={selectedIds.includes(emp.id)}
+                      onSelect={(c) => onSelectEmployee(emp.id, c)}
+                      onEdit={() => onAction('edit', emp.id)}
+                      onArchive={() => onAction('archive', emp.id)}
+                      onRestore={() => onAction('restore', emp.id)}
+                      onDelete={() => onAction('delete', emp.id)}
+                      onClick={() => onAction('transaction', emp.id)}
+                    />
+                  ))}
+                </Grid>
+              </Box>
             ))}
-          </Grid>
+          </Box>
         </Collapsible.Content>
       </Box>
     </Collapsible.Root>

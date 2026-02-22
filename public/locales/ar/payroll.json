@@ -4,7 +4,8 @@
     "history": "السجل"
   },
   "run": {
-    "closeMonth": "إغلاق الشهر وإنشاء القسائم",
+    "closeMonth": "إغلاق الشهر",
+    "backToHistory": "العودة للسجل",
     "table": {
       "employee": "الموظف",
       "basic": "الأساسي",
@@ -13,6 +14,11 @@
       "netSalary": "صافي الراتب",
       "manage": "إدارة"
     },
+    "employeesCount": "موظف",
+    "totalBasic": "إجمالي الأساسي",
+    "totalNet": "إجمالي الصافي",
+    "globalTotalBasic": "إجمالي الرواتب الأساسية",
+    "globalTotalNet": "إجمالي المدفوعات الصافية",
     "toast": {
       "monthClosed": "تم إغلاق الشهر وإنشاء القسائم",
       "transactionAdded": "تم إضافة المعاملة"
@@ -77,6 +83,26 @@
   "units": {
     "hours": "ساعات",
     "days": "أيام",
-    "cash": "مبلغ نقدي"
+    "cash": "",
+    "perHour": "/ساعة"
+  },
+  "payslip": {
+    "title": "قسيمة الراتب",
+    "employeeName": "اسم الموظف",
+    "period": "الفترة",
+    "basicSalary": "الراتب الأساسي",
+    "additions": "الإضافات",
+    "deductions": "الخصومات",
+    "deductionsList": "الخصومات",
+    "netSalary": "صافي الراتب",
+    "breakdown": "التفصيل المالي",
+    "overtime": "وقت إضافي",
+    "bonus": "مكافأة",
+    "deduction": "خصم",
+    "advance": "سلفة (قرض)",
+    "totalAdditions": "إجمالي الإضافات",
+    "totalDeductions": "إجمالي الخصومات",
+    "employeeSignature": "توقيع الموظف",
+    "managerSignature": "توقيع المدير"
   }
 }

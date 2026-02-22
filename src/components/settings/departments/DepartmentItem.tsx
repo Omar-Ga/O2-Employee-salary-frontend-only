@@ -1,174 +1,118 @@
-import { useSortable } from "@dnd-kit/sortable"
-import { CSS } from "@dnd-kit/utilities"
 import { Box, Text, Icon, IconButton, Flex, Input } from "@chakra-ui/react"
 import { useTranslation } from "react-i18next"
-import { LuGripVertical, LuChevronDown, LuChevronRight } from "react-icons/lu"
-import { FlattenedItem } from "./types"
-import { memo, useState, useRef, useEffect } from "react"
+import { LuChevronDown, LuChevronRight } from "react-icons/lu"
+import { NodeRendererProps } from "react-arborist"
+import { DepartmentNode } from "./types"
+import { useRef, useEffect } from "react"
 
-interface DepartmentItemProps {
-  department: FlattenedItem
-  depth?: number
-  isOverlay?: boolean
-  isCollapsed?: boolean
-  onToggleCollapse?: () => void
-  onRename?: (newName: string) => void
-  color?: string
-}
+const DEPARTMENT_COLORS = [
+  "blue", "purple", "cyan", "teal", "green", "orange", "pink", "red"
+]
 
-export const DepartmentItem = memo(({
-  department,
-  depth = 0,
-  isOverlay,
-  isCollapsed,
-  onToggleCollapse,
-  onRename,
-  color = "gray"
-}: DepartmentItemProps) => {
+export const DepartmentItem = ({
+  node,
+  style
+}: NodeRendererProps<DepartmentNode>) => {
   const { t } = useTranslation('departments')
-  const [isEditing, setIsEditing] = useState(false)
-  const [editValue, setEditValue] = useState(department.name)
   const inputRef = useRef<HTMLInputElement>(null)
 
-  const {
-    attributes,
-    listeners,
-    setNodeRef,
-    transform,
-    transition,
-    isDragging,
-  } = useSortable({
-    id: department.id,
-    data: { type: "department", department },
-    disabled: isEditing
-  })
-
   useEffect(() => {
-    if (isEditing) {
+    if (node.isEditing) {
       inputRef.current?.focus()
       inputRef.current?.select()
     }
-  }, [isEditing])
-
-  const handleDoubleClick = (e: React.MouseEvent) => {
-    if (isOverlay) return
-    e.stopPropagation()
-    setIsEditing(true)
-  }
+  }, [node.isEditing])
 
   const handleBlur = () => {
-    setIsEditing(false)
-    if (editValue.trim() && editValue !== department.name) {
-      onRename?.(editValue.trim())
-    } else {
-      setEditValue(department.name)
+    if (inputRef.current) {
+      const newValue = inputRef.current.value.trim()
+      if (newValue && newValue !== node.data.name) {
+        node.submit(newValue)
+      } else {
+        node.reset()
+      }
     }
   }
 
   const handleKeyDown = (e: React.KeyboardEvent) => {
     if (e.key === 'Enter') {
-      inputRef.current?.blur()
+      handleBlur()
     } else if (e.key === 'Escape') {
-      setEditValue(department.name)
-      setIsEditing(false)
+      node.reset()
     }
   }
 
-  const isParent = depth === 0
-  // Parents get their unique color; children are always silver/gray
-  const accentColor = isParent ? color : "gray"
+  const isParent = node.level === 0
+  const hasChildren = !node.isLeaf
 
-  const style = {
-    transform: CSS.Transform.toString(transform),
-    transition,
-    opacity: isDragging ? 0.4 : 1,
-    marginLeft: depth === 0 ? 0 : `${depth * 28}px`,
-    position: "relative" as const,
-    zIndex: isDragging ? 999 : "auto",
-    marginBottom: "4px",
-  }
-
-  const hasChildren = department.childCount > 0
+  // Assign a static color based on the parent's index for visual grouping
+  const rootIndex = isParent ? node.childIndex : (node.parent?.childIndex || 0)
+  const accentColor = DEPARTMENT_COLORS[rootIndex % DEPARTMENT_COLORS.length]
 
   return (
-    <Box ref={setNodeRef} style={style} {...attributes}>
+    <Box style={style} px={2}>
       <Flex
-        bg={isParent ? "white" : "gray.50"}
+        bg={node.isSelected ? "oxygen.50" : (isParent ? "white" : "gray.50")}
         py={isParent ? "10px" : "7px"}
         px={3}
         borderRadius="md"
         border="1px solid"
-        borderColor={isDragging ? `${accentColor}.400` : (isParent ? "gray.200" : "gray.200")}
-        borderLeftWidth="3px"
-        borderLeftColor={`${accentColor}.${isParent ? '500' : '200'}`}
-        boxShadow={isDragging ? "md" : (isParent ? "sm" : "none")}
-        _hover={{ borderColor: `${accentColor}.300`, boxShadow: "sm" }}
+        borderColor={node.isSelected ? "oxygen.300" : "gray.200"}
+        borderLeftWidth={node.isSelected ? "3px" : (isParent ? "3px" : "1px")}
+        borderLeftColor={node.isSelected ? "oxygen.500" : (isParent ? `${accentColor}.500` : "gray.200")}
+        boxShadow={isParent ? "sm" : "none"}
+        _hover={{ borderColor: `${accentColor}.300`, boxShadow: "sm", bg: "white" }}
         align="center"
         gap={2}
-        transition="all 0.15s"
-        onDoubleClick={handleDoubleClick}
+        transition="all 0.1s"
+        onDoubleClick={() => node.edit()}
+        onClick={() => node.select()}
       >
-        {/* Drag Handle */}
-        <Box
-          {...listeners}
-          cursor="grab"
-          color="gray.400"
-          _hover={{ color: "gray.600" }}
-          _active={{ cursor: "grabbing" }}
-          display="flex"
-          alignItems="center"
-        >
-          <Icon as={LuGripVertical} boxSize={4} />
-        </Box>
-
         {/* Name */}
-        {isEditing ? (
+        {node.isEditing ? (
           <Input
             ref={inputRef}
             size="sm"
-            value={editValue}
-            onChange={(e) => setEditValue(e.target.value)}
+            defaultValue={node.data.name}
             onBlur={handleBlur}
             onKeyDown={handleKeyDown}
             variant="outline"
             bg="white"
             h="24px"
             flex={1}
-            autoFocus
+            onClick={(e) => e.stopPropagation()}
           />
         ) : (
           <Text
             fontWeight={isParent ? "semibold" : "normal"}
             fontSize="sm"
-            color={isParent ? "gray.800" : "gray.600"}
+            color={node.isSelected ? "oxygen.800" : (isParent ? "gray.800" : "gray.600")}
             flex={1}
             lineHeight="1.3"
             userSelect="none"
           >
-            {department.name}
+            {node.data.name}
           </Text>
         )}
 
         {/* Child count for parents */}
         {hasChildren && (
           <Text fontSize="xs" color="gray.400" mr={1}>
-            {department.childCount}
+            {node.children?.length || 0}
           </Text>
         )}
 
         {/* Actions Group */}
         <Flex gap={1} align="center">
-
-
           {/* Collapse Action */}
-          {hasChildren && !isOverlay && (
+          {hasChildren && (
             <IconButton
               variant="ghost"
               size="xs"
               aria-label={t('actions.toggleCollapse', { defaultValue: 'Toggle collapse' })}
               onClick={(e) => {
                 e.stopPropagation()
-                onToggleCollapse?.()
+                node.toggle()
               }}
               color="gray.400"
               _hover={{ bg: "gray.100", color: "gray.600" }}
@@ -176,11 +120,11 @@ export const DepartmentItem = memo(({
               h="auto"
               p={0.5}
             >
-              <Icon as={isCollapsed ? LuChevronRight : LuChevronDown} boxSize={4} />
+              <Icon as={node.isOpen ? LuChevronDown : LuChevronRight} boxSize={4} />
             </IconButton>
           )}
         </Flex>
       </Flex>
     </Box>
   )
-})
+}

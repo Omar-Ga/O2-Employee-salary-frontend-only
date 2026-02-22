@@ -10,7 +10,8 @@
   "actions": {
     "expandAll": "Expand All",
     "collapseAll": "Collapse All",
-    "addDepartment": "Add Department"
+    "addDepartment": "Add Department",
+    "addSubdepartment": "Add Subdepartment"
   },
   "deleteDialog": {
     "title": "Delete Department",

@@ -12,7 +12,7 @@ interface AuthState {
 }
 
 export const useAuthStore = create<AuthState>((set) => ({
-    user: pb.authStore.record as UsersResponse | null,
+    user: pb.authStore.isValid ? (pb.authStore.record as UsersResponse) : null,
     isLoading: false,
 
     login: (user, token) => {
@@ -43,5 +43,5 @@ export const useAuthStore = create<AuthState>((set) => ({
 
 // Sync store with PocketBase authStore updates
 pb.authStore.onChange((_token: string, model: RecordModel | null) => {
-    useAuthStore.setState({ user: model as UsersResponse | null });
+    useAuthStore.setState({ user: pb.authStore.isValid ? (model as UsersResponse) : null });
 });

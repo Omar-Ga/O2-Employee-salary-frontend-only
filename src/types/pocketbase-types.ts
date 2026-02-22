@@ -97,26 +97,102 @@ export type SuperusersRecord = {
 	verified?: boolean
 }
 
+export enum DepartmentsTypeOptions {
+	"structural" = "structural",
+	"functional" = "functional",
+}
 export type DepartmentsRecord = {
+	created: IsoAutoDateString
 	id: string
+	name: string
+	parentId?: RecordIdString
+	type: DepartmentsTypeOptions
+	updated: IsoAutoDateString
 }
 
-export type EmployeesRecord = {
+export enum EmployeesGradeOptions {
+	"Excellent" = "Excellent",
+	"Good" = "Good",
+	"Bad" = "Bad",
+}
+export type EmployeesRecord<Tscores = unknown> = {
+	archiveDate?: IsoDateString
+	created: IsoAutoDateString
+	department: RecordIdString
+	email: string
+	grade?: EmployeesGradeOptions
 	id: string
+	isArchived?: boolean
+	jobTitle: string
+	monthlySalary: number
+	name: string
+	nationalId: string
+	phone: string
+	scores?: null | Tscores
+	updated: IsoAutoDateString
+	workHours: number
 }
 
 export type PayrollRunsRecord = {
+	created: IsoAutoDateString
+	date: IsoDateString
 	id: string
+	isClosed?: boolean
+	period: string
+	updated: IsoAutoDateString
 }
 
 export type PayrollSlipsRecord = {
+	additions?: number
+	basicSalary?: number
+	created: IsoAutoDateString
+	deductions?: number
+	departmentId: RecordIdString
+	employeeId: RecordIdString
+	hourlyRate?: number
 	id: string
+	netSalary?: number
+	payrollRunId: RecordIdString
+	transactions?: RecordIdString
+	updated: IsoAutoDateString
 }
 
+export enum TransactionsCategoryOptions {
+	"overtime" = "overtime",
+	"deduction" = "deduction",
+	"bonus" = "bonus",
+	"advance" = "advance",
+}
+
+export enum TransactionsTypeOptions {
+	"addition" = "addition",
+	"deduction" = "deduction",
+}
+
+export enum TransactionsUnitOptions {
+	"hours" = "hours",
+	"days" = "days",
+	"cash" = "cash",
+}
 export type TransactionsRecord = {
+	amount: number
+	category: TransactionsCategoryOptions
+	created: IsoAutoDateString
+	date: IsoDateString
+	employeeId: RecordIdString
 	id: string
+	isClosed?: boolean
+	reason?: string
+	type: TransactionsTypeOptions
+	unit: TransactionsUnitOptions
+	updated: IsoAutoDateString
 }
 
+export enum UsersRoleOptions {
+	"admin" = "admin",
+	"editor" = "editor",
+	"viewer" = "viewer",
+}
 export type UsersRecord = {
 	avatar?: FileNameString
 	created: IsoAutoDateString
@@ -125,6 +201,7 @@ export type UsersRecord = {
 	id: string
 	name?: string
 	password: string
+	role?: UsersRoleOptions
 	tokenKey: string
 	updated: IsoAutoDateString
 	verified?: boolean
@@ -137,7 +214,7 @@ export type MfasResponse<Texpand = unknown> = Required<MfasRecord> & BaseSystemF
 export type OtpsResponse<Texpand = unknown> = Required<OtpsRecord> & BaseSystemFields<Texpand>
 export type SuperusersResponse<Texpand = unknown> = Required<SuperusersRecord> & AuthSystemFields<Texpand>
 export type DepartmentsResponse<Texpand = unknown> = Required<DepartmentsRecord> & BaseSystemFields<Texpand>
-export type EmployeesResponse<Texpand = unknown> = Required<EmployeesRecord> & BaseSystemFields<Texpand>
+export type EmployeesResponse<Tscores = unknown, Texpand = unknown> = Required<EmployeesRecord<Tscores>> & BaseSystemFields<Texpand>
 export type PayrollRunsResponse<Texpand = unknown> = Required<PayrollRunsRecord> & BaseSystemFields<Texpand>
 export type PayrollSlipsResponse<Texpand = unknown> = Required<PayrollSlipsRecord> & BaseSystemFields<Texpand>
 export type TransactionsResponse<Texpand = unknown> = Required<TransactionsRecord> & BaseSystemFields<Texpand>

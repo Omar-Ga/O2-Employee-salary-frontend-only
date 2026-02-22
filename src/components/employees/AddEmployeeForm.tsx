@@ -1,8 +1,10 @@
-import { Button, HStack, Heading, Input, Separator, Portal, Stack, Select, createListCollection } from "@chakra-ui/react"
+import { Button, HStack, Heading, Input, Separator, Stack, createListCollection } from "@chakra-ui/react"
+import { SelectRoot, SelectTrigger, SelectValueText, SelectContent, SelectItemGroup, SelectItem } from "@/components/ui/select"
+import { Employee } from "@/types"
 import type { FormEvent, ChangeEvent } from "react"
 import { useTranslation } from "react-i18next"
 import { employeeService } from "@/services/employee.service"
-import { useState, useMemo } from "react"
+import { useState, useMemo, Fragment } from "react"
 import { toaster } from "@/components/ui/toaster"
 import { useDepartments } from "@/hooks/useDepartments"
 import type { DepartmentConfig } from "@/lib/departments"
@@ -10,23 +12,25 @@ import { Field } from "@/components/ui/field"
 
 interface AddEmployeeFormProps {
   onSuccess: () => void
+  initialData?: Employee
 }
 
-export const AddEmployeeForm = ({ onSuccess }: AddEmployeeFormProps) => {
+export const AddEmployeeForm = ({ onSuccess, initialData }: AddEmployeeFormProps) => {
   const { t } = useTranslation('employees')
+  const defaultGradeScore = initialData?.grade === 'Excellent' ? 90 : initialData?.grade === 'Good' ? 75 : initialData?.grade === 'Bad' ? 50 : 80;
   const [formData, setFormData] = useState({
-    name: '',
-    email: '',
-    phone: '',
-    department: '', // Stores sub-department ID
-    jobTitle: '',
-    monthlySalary: 5000,
-    nationalId: '',
-    workHours: 270,
+    name: initialData?.name || '',
+    email: initialData?.email || '',
+    phone: initialData?.phone || '',
+    department: initialData?.department || '', // Stores sub-department ID
+    jobTitle: initialData?.jobTitle || '',
+    monthlySalary: initialData?.monthlySalary || 5000,
+    nationalId: initialData?.nationalId || '',
+    workHours: initialData?.workHours || 270,
     scores: {
-      performance: 80,
-      dedication: 80,
-      responsibility: 80
+      performance: defaultGradeScore,
+      dedication: defaultGradeScore,
+      responsibility: defaultGradeScore
     }
   })
 
@@ -56,14 +60,22 @@ export const AddEmployeeForm = ({ onSuccess }: AddEmployeeFormProps) => {
     const grade = calculateGrade(formData.scores.performance, formData.scores.dedication, formData.scores.responsibility)
 
     try {
-      await employeeService.create({
-        ...formData as any,
-        grade
-      })
-      toaster.create({ title: t('toast.created'), type: "success" })
+      if (initialData?.id) {
+        await employeeService.update(initialData.id, {
+          ...formData as any,
+          grade
+        })
+        toaster.create({ title: t('toast.updated', { defaultValue: 'Employee updated' }), type: "success" })
+      } else {
+        await employeeService.create({
+          ...formData as any,
+          grade
+        })
+        toaster.create({ title: t('toast.created'), type: "success" })
+      }
       onSuccess()
     } catch (error) {
-      toaster.create({ title: "Error creating employee", type: "error" })
+      toaster.create({ title: initialData?.id ? "Error updating employee" : "Error creating employee", type: "error" })
     }
   }
 
@@ -92,7 +104,7 @@ export const AddEmployeeForm = ({ onSuccess }: AddEmployeeFormProps) => {
         </Field>
 
         <HStack align="flex-start" gap="4">
-          <Field label={t('form.email')} required>
+          <Field label={t('form.email')}>
             <Input type="email" value={formData.email} onChange={(e: ChangeEvent<HTMLInputElement>) => setFormData({ ...formData, email: e.target.value })} placeholder="john@example.com" />
           </Field>
           <Field label={t('form.phone')} required>
@@ -102,31 +114,29 @@ export const AddEmployeeForm = ({ onSuccess }: AddEmployeeFormProps) => {
 
         <HStack align="flex-start" gap="4">
           <Field label={t('form.department')} required>
-            <Select.Root
+            <SelectRoot
               collection={departmentsCollection}
               value={[formData.department]}
               onValueChange={(e) => setFormData({ ...formData, department: e.value[0] })}
             >
-              <Select.Trigger>
-                <Select.ValueText placeholder={t('actions.selectDepartment')} />
-              </Select.Trigger>
-              <Portal>
-                <Select.Positioner>
-                  <Select.Content maxH="320px" overflowY="auto" zIndex="popover">
-                    {groups.map(([group, items]) => (
-                      <Select.ItemGroup key={group}>
-                        <Select.ItemGroupLabel>{group}</Select.ItemGroupLabel>
-                        {items.map(item => (
-                          <Select.Item item={item} key={item.value}>
-                            {item.label}
-                          </Select.Item>
-                        ))}
-                      </Select.ItemGroup>
-                    ))}
-                  </Select.Content>
-                </Select.Positioner>
-              </Portal>
-            </Select.Root>
+              <SelectTrigger>
+                <SelectValueText placeholder={t('actions.selectDepartment')} />
+              </SelectTrigger>
+              <SelectContent portalled={false} maxH="320px" overflowY="auto" zIndex="popover">
+                {groups.map(([group, items], index) => (
+                  <Fragment key={group}>
+                    {index > 0 && <Separator my="1" borderColor="gray.200" />}
+                    <SelectItemGroup label={group}>
+                      {items.map(item => (
+                        <SelectItem item={item} key={item.value}>
+                          {item.label}
+                        </SelectItem>
+                      ))}
+                    </SelectItemGroup>
+                  </Fragment>
+                ))}
+              </SelectContent>
+            </SelectRoot>
           </Field>
           <Field label={t('form.workHours')} required>
             <Input type="number" value={formData.workHours} onChange={(e: ChangeEvent<HTMLInputElement>) => setFormData({ ...formData, workHours: Number(e.target.value) })} />
@@ -161,7 +171,9 @@ export const AddEmployeeForm = ({ onSuccess }: AddEmployeeFormProps) => {
           </Field>
         </HStack>
 
-        <Button type="submit" colorPalette="oxygen" w="full" mt="6" size="lg">{t('actions.create')}</Button>
+        <Button type="submit" colorPalette="oxygen" w="full" mt="6" size="lg">
+          {initialData ? t('actions.update', { defaultValue: 'Update Employee' }) : t('actions.create', { defaultValue: 'Create Employee' })}
+        </Button>
       </Stack>
     </form>
   )

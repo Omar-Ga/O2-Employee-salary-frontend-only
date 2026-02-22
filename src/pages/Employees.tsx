@@ -3,7 +3,7 @@ import { useQuery, useMutation, useQueryClient } from "@tanstack/react-query"
 import { useTranslation } from "react-i18next"
 import { employeeService } from "@/services/employee.service"
 import { LuPlus, LuSearch, LuX } from "react-icons/lu"
-import { useState, useMemo } from "react"
+import { useState, useMemo, Fragment } from "react"
 import { toaster } from "@/components/ui/toaster"
 import {
   DrawerBackdrop,
@@ -16,8 +16,8 @@ import {
   DrawerTrigger,
 } from "@/components/ui/drawer"
 import { InputGroup } from "@/components/ui/input-group"
-import { Select } from "@chakra-ui/react"
-import { DEPARTMENT_CONFIG, getParentDepartment } from "@/lib/departments"
+import { SelectRoot, SelectTrigger, SelectValueText, SelectContent, SelectItemGroup, SelectItem } from "@/components/ui/select"
+
 import { DepartmentGroup } from "@/components/employees/DepartmentGroup"
 import { Employee } from "@/types"
 import { TransactionDrawer } from "@/components/transactions/TransactionDrawer"
@@ -64,6 +64,10 @@ export const Employees = () => {
   const [transactionEmployeeIds, setTransactionEmployeeIds] = useState<string[]>([])
   const [isTransactionDrawerOpen, setIsTransactionDrawerOpen] = useState(false)
 
+  // Edit State
+  const [employeeToEdit, setEmployeeToEdit] = useState<Employee | null>(null)
+  const [isEditDrawerOpen, setIsEditDrawerOpen] = useState(false)
+
   // Filter Logic
   const filteredEmployees = useMemo(() => {
     return employees.filter((e: any) => {
@@ -92,18 +96,25 @@ export const Employees = () => {
   const groupedEmployees = useMemo(() => {
     const groups = new Map<string, Employee[]>()
 
-    DEPARTMENT_CONFIG.forEach(d => groups.set(d.id, []))
+    // Initialize groups for parent departments
+    departmentConfig.forEach(parent => {
+      groups.set(parent.id, [])
+    })
     groups.set('other', [])
 
     filteredEmployees.forEach((e: any) => {
-      const parent = getParentDepartment(e.department)
+      // Find parent department based on sub-department match
+      const parent = departmentConfig.find(p => p.subDepartments.some(sub => sub.id === e.department))
       const groupId = parent ? parent.id : 'other'
-      const group = groups.get(groupId)
-      if (group) group.push(e)
+      if (groups.has(groupId)) {
+        groups.get(groupId)!.push(e)
+      } else {
+        groups.get('other')!.push(e)
+      }
     })
 
     return groups
-  }, [filteredEmployees])
+  }, [filteredEmployees, departmentConfig])
 
   // Handlers
   const handleAction = (action: string, id: string) => {
@@ -116,6 +127,12 @@ export const Employees = () => {
     } else if (action === 'transaction') {
       setTransactionEmployeeIds([id])
       setIsTransactionDrawerOpen(true)
+    } else if (action === 'edit') {
+      const emp = employees.find((e: Employee) => e.id === id)
+      if (emp) {
+        setEmployeeToEdit(emp)
+        setIsEditDrawerOpen(true)
+      }
     }
   }
 
@@ -213,32 +230,30 @@ export const Employees = () => {
           </InputGroup>
 
           <HStack gap="2">
-            <Select.Root
+            <SelectRoot
               collection={filterCollection}
               value={departmentFilter}
               onValueChange={(e) => setDepartmentFilter(e.value)}
               width="180px"
             >
-              <Select.Trigger bg="white" borderRadius="lg">
-                <Select.ValueText placeholder={t('actions.filterDept')} />
-              </Select.Trigger>
-              <Portal>
-                <Select.Positioner>
-                  <Select.Content maxH="320px" overflowY="auto" zIndex="popover">
-                    {filterGroups.map(([group, items]) => (
-                      <Select.ItemGroup key={group}>
-                        <Select.ItemGroupLabel>{group}</Select.ItemGroupLabel>
-                        {items.map(item => (
-                          <Select.Item item={item} key={item.value}>
-                            {item.label}
-                          </Select.Item>
-                        ))}
-                      </Select.ItemGroup>
-                    ))}
-                  </Select.Content>
-                </Select.Positioner>
-              </Portal>
-            </Select.Root>
+              <SelectTrigger bg="white" borderRadius="lg">
+                <SelectValueText placeholder={t('actions.filterDept')} />
+              </SelectTrigger>
+              <SelectContent maxH="320px" overflowY="auto" zIndex="popover">
+                {filterGroups.map(([group, items], index) => (
+                  <Fragment key={group}>
+                    {index > 0 && <Separator my="1" borderColor="gray.200" />}
+                    <SelectItemGroup label={group}>
+                      {items.map(item => (
+                        <SelectItem item={item} key={item.value}>
+                          {item.label}
+                        </SelectItem>
+                      ))}
+                    </SelectItemGroup>
+                  </Fragment>
+                ))}
+              </SelectContent>
+            </SelectRoot>
             {departmentFilter.length > 0 && (
               <IconButton
                 size="sm"
@@ -291,14 +306,14 @@ export const Employees = () => {
           </VStack>
         ) : (
           <Stack gap="2">
-            {departmentConfig.map(dept => {
-              const groupEmployees = groupedEmployees.get(dept.id) || []
+            {departmentConfig.map(parent => {
+              const groupEmployees = groupedEmployees.get(parent.id) || []
               if (groupEmployees.length === 0) return null
 
               return (
                 <DepartmentGroup
-                  key={dept.id}
-                  department={dept}
+                  key={parent.id}
+                  department={parent}
                   employees={groupEmployees}
                   selectedIds={selectedEmployeeIds}
                   onSelectEmployee={handleSelectOne}
@@ -310,7 +325,7 @@ export const Employees = () => {
             {/* Fallback for 'Other' */}
             {(groupedEmployees.get('other')?.length || 0) > 0 && (
               <DepartmentGroup
-                department={{ id: 'other', label: t('tabs.other'), subDepartments: [] }}
+                department={{ id: 'other', label: t('tabs.other', { defaultValue: 'Other' }), colorPalette: 'gray', subDepartments: [] }}
                 employees={groupedEmployees.get('other') || []}
                 selectedIds={selectedEmployeeIds}
                 onSelectEmployee={handleSelectOne}
@@ -378,6 +393,31 @@ export const Employees = () => {
           setTransactionEmployeeIds([]) // Clear dialog target
         }}
       />
+
+      <DrawerRoot size="md" open={isEditDrawerOpen} onOpenChange={(e) => {
+        setIsEditDrawerOpen(e.open)
+        if (!e.open) setEmployeeToEdit(null)
+      }}>
+        <DrawerBackdrop />
+        <DrawerContent>
+          <DrawerCloseTrigger />
+          <DrawerHeader>
+            <DrawerTitle>{t('drawer.editTitle', { defaultValue: 'Edit Employee' })}</DrawerTitle>
+          </DrawerHeader>
+          <DrawerBody>
+            {employeeToEdit && (
+              <AddEmployeeForm
+                initialData={employeeToEdit}
+                onSuccess={() => {
+                  setIsEditDrawerOpen(false)
+                  setEmployeeToEdit(null)
+                  queryClient.invalidateQueries({ queryKey: ['employees'] })
+                }}
+              />
+            )}
+          </DrawerBody>
+        </DrawerContent>
+      </DrawerRoot>
     </Box>
   )
 }

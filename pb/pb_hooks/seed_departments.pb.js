@@ -1,16 +1,12 @@
 routerAdd("GET", "/api/seed-departments", (c) => {
-    const dao = $app.dao();
-
-    // Check if departments exist
-    const existing = dao.findCollectionByNameOrId("departments");
-    // Actually we want to check if any records exist
     try {
-        const records = dao.findRecordsByFilter("departments", "id != ''", "-created", 1);
+        // Check if records already exist
+        const records = $app.findRecordsByFilter("departments", "id != ''", "-created", 1);
         if (records.length > 0) {
             return c.json(200, { message: "Departments already seeded" });
         }
     } catch (e) {
-        // collection might not exist or other error
+        // error might happen if collection doesn't exist or is empty
     }
 
     const config = [
@@ -21,7 +17,6 @@ routerAdd("GET", "/api/seed-departments", (c) => {
                 { name: "Frontend" },
                 { name: "Backend" },
                 { name: "Quality Assurance" },
-                { name: "Engineering" },
             ]
         },
         {
@@ -30,7 +25,6 @@ routerAdd("GET", "/api/seed-departments", (c) => {
             subDepartments: [
                 { name: "Product Design" },
                 { name: "Graphic Design" },
-                { name: "Design" },
             ]
         },
         {
@@ -38,47 +32,31 @@ routerAdd("GET", "/api/seed-departments", (c) => {
             type: "structural",
             subDepartments: [
                 { name: "Product Management" },
-                { name: "Product" },
-            ]
-        },
-        {
-            name: "Finance",
-            type: "structural",
-            subDepartments: [
-                { name: "Accounting" },
-                { name: "Auditing" },
-            ]
-        },
-        {
-            name: "Human Resources",
-            type: "structural",
-            subDepartments: [
-                { name: "Recruitment" },
-                { name: "Operations" },
             ]
         }
     ];
 
-    const collection = dao.findCollectionByNameOrId("departments");
+    const collection = $app.findCollectionByNameOrId("departments");
 
     try {
-        dao.runInTransaction((txDao) => {
+        $app.runInTransaction((txApp) => {
             config.forEach(dept => {
                 const record = new Record(collection);
                 record.set("name", dept.name);
                 record.set("type", dept.type);
-                txDao.saveRecord(record);
+                txApp.save(record);
 
                 dept.subDepartments.forEach(sub => {
                     const subRecord = new Record(collection);
                     subRecord.set("name", sub.name);
                     subRecord.set("type", "functional");
                     subRecord.set("parentId", record.id);
-                    txDao.saveRecord(subRecord);
+                    txApp.save(subRecord);
                 });
             });
         });
     } catch (e) {
+        console.log("SEED ERROR", e);
         return c.json(500, { error: e.message });
     }
 

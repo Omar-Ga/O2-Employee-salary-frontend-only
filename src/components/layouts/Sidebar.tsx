@@ -1,5 +1,5 @@
 import { Box, HStack, Heading, Icon, Stack, Text, Link as ChakraLink } from "@chakra-ui/react"
-import { LuLayoutDashboard, LuUsers, LuWallet, LuBriefcase, LuSettings } from "react-icons/lu"
+import { LuLayoutDashboard, LuUsers, LuWallet, LuSettings } from "react-icons/lu"
 import { useTranslation } from "react-i18next"
 import { useLocation, Link } from "react-router-dom"
 
@@ -7,7 +7,6 @@ const MENU_ITEMS = [
   { key: "dashboard", icon: LuLayoutDashboard, path: "/" },
   { key: "employees", icon: LuUsers, path: "/employees" },
   { key: "payroll", icon: LuWallet, path: "/payroll" },
-  { key: "recruitment", icon: LuBriefcase, path: "/recruitment", disabled: true },
   { key: "settings", icon: LuSettings, path: "/settings" },
 ]
 
@@ -46,8 +45,6 @@ export const Sidebar = () => {
                     bg: isActive ? "oxygen.50" : "gray.50",
                     color: "oxygen.600"
                   }}
-                  opacity={item.disabled ? 0.5 : 1}
-                  pointerEvents={item.disabled ? "none" : "auto"}
                   position="relative"
                 >
                   <Icon as={item.icon} boxSize="5" strokeWidth={isActive ? 2.5 : 2} />

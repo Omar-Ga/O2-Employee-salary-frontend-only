@@ -300,16 +300,16 @@ export const TransactionDrawer = ({ open, onOpenChange, employeeIds, onSuccess }
                   <Stack gap="2">
                     <HStack justify="space-between" fontSize="sm">
                       <Text color="gray.500">{t('preview.totalAdditions')}</Text>
-                      <Text color="green.600" fontWeight="bold">+{formatCurrency(projectedSlip.additions)}</Text>
+                      <Text color="green.600" fontWeight="bold">+{formatCurrency(projectedSlip.overtimeAmount + projectedSlip.bonusAmount)}</Text>
                     </HStack>
                     <HStack justify="space-between" fontSize="sm">
                       <Text color="gray.500">{t('preview.totalDeductions')}</Text>
-                      <Text color="red.600" fontWeight="bold">-{formatCurrency(projectedSlip.deductions)}</Text>
+                      <Text color="red.600" fontWeight="bold">-{formatCurrency(projectedSlip.deductionAmount + projectedSlip.advanceAmount)}</Text>
                     </HStack>
                     <Separator />
                     <HStack justify="space-between" fontSize="sm" fontWeight="bold">
                       <Text color="gray.700">{t('preview.hourlyRate')}</Text>
-                      <Text color="gray.700">{formatCurrency(projectedSlip.hourlyRate)}{t('units.perHour')}</Text>
+                      <Text color="gray.700">{formatCurrency(singleEmployee!.monthlySalary / singleEmployee!.workHours)}{t('units.perHour')}</Text>
                     </HStack>
                   </Stack>
                 )}
@@ -424,8 +424,8 @@ export const TransactionDrawer = ({ open, onOpenChange, employeeIds, onSuccess }
                         ? t('preview.bulkSummary', { count: employeeIds.length, category: t(`categories.${activeCategory}`) })
                         : t('preview.impactDescription', {
                           category: t(`categories.${activeCategory}`),
-                          amount: staged[activeCategory].amount,
-                          unit: t(`units.${(staged[activeCategory] as any).unit}`)
+                          amount: staged[activeCategory].unit === 'cash' ? formatCurrency(staged[activeCategory].amount) : staged[activeCategory].amount,
+                          unit: staged[activeCategory].unit === 'cash' ? '' : t(`units.${(staged[activeCategory] as any).unit}`)
                         })}
                     </Text>
                   </HStack>
@@ -466,7 +466,7 @@ export const TransactionDrawer = ({ open, onOpenChange, employeeIds, onSuccess }
                               <Box>
                                 <Text fontSize="sm" fontWeight="bold" color="gray.700">{t(`categories.${tx.category}`)}</Text>
                                 <Text fontSize="xs" color="gray.500">
-                                  {tx.amount} {t(`units.${tx.unit}`)}
+                                  {tx.unit === 'cash' ? formatCurrency(tx.amount) : `${tx.amount} ${t(`units.${tx.unit}`)}`}
                                 </Text>
                               </Box>
                             </HStack>

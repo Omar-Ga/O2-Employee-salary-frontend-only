@@ -1,13 +1,23 @@
-import { Box, HStack, Text, Badge, IconButton, Menu, Grid, GridItem } from "@chakra-ui/react"
+import { Box, HStack, Text, Badge, IconButton, Grid, GridItem } from "@chakra-ui/react"
 import { Employee } from "@/types"
 import { LuEllipsis, LuPencil, LuArchive, LuUndo, LuTrash2 } from "react-icons/lu"
 import { formatCurrency } from "@/lib/utils"
 import { getDepartmentColor } from "@/lib/departments"
+import { useDepartments } from "@/hooks/useDepartments"
 import { useTranslation } from "react-i18next"
 import { Checkbox } from "@/components/ui/checkbox"
+import {
+  MenuContent,
+  MenuItem,
+  MenuRoot,
+  MenuSeparator,
+  MenuTrigger,
+} from "@/components/ui/menu"
 
 interface EmployeeCardProps {
   employee: Employee
+  departmentName?: string
+  colorPalette?: string
   isSelected: boolean
   onSelect: (checked: boolean) => void
   onEdit: () => void
@@ -19,6 +29,8 @@ interface EmployeeCardProps {
 
 export const EmployeeCard = ({
   employee,
+  departmentName,
+  colorPalette,
   isSelected,
   onSelect,
   onEdit,
@@ -28,7 +40,9 @@ export const EmployeeCard = ({
   onClick
 }: EmployeeCardProps) => {
   const { t } = useTranslation('employees')
-  const departmentColor = getDepartmentColor(employee.department)
+  const { departments: departmentConfig } = useDepartments()
+  const finalDepartmentColor = colorPalette || getDepartmentColor(departmentConfig, employee.department)
+  const finalDepartmentName = departmentName || t(`departments.${employee.department}`, { defaultValue: employee.department })
 
   const gradeColor = {
     'Excellent': 'green',
@@ -44,7 +58,7 @@ export const EmployeeCard = ({
       borderColor={isSelected ? "oxygen.500" : "gray.200"}
       shadow={isSelected ? "md" : "sm"}
       transition="all 0.2s"
-      _hover={{ shadow: "md", borderColor: "oxygen.500", transform: "translateY(-1px)" }}
+      _hover={{ shadow: "md", bg: "oxygen.50" }}
       position="relative"
       overflow="hidden"
       py="2"
@@ -75,8 +89,8 @@ export const EmployeeCard = ({
         {/* 3. Department & Grade */}
         <GridItem display={{ base: "none", md: "block" }}>
           <HStack gap="2">
-            <Badge variant="subtle" colorPalette={departmentColor} size="sm">
-              {t(`departments.${employee.department}`, { defaultValue: employee.department })}
+            <Badge variant="subtle" colorPalette={finalDepartmentColor} size="sm">
+              {finalDepartmentName}
             </Badge>
             {employee.grade && (
               <Badge variant="outline" colorPalette={gradeColor} size="sm">
@@ -93,48 +107,67 @@ export const EmployeeCard = ({
           </Text>
         </GridItem>
 
-        {/* 5. Status Indicator */}
+        {/* 5. Status Indicator & Dates */}
         <GridItem>
-          <Badge
-            size="sm"
-            variant="solid"
-            colorPalette={employee.isArchived ? "gray" : "green"}
-          >
-            {employee.isArchived ? t('status.archived') : t('status.active')}
-          </Badge>
+          {employee.isArchived ? (
+            <Box textAlign="right">
+              <Badge
+                size="sm"
+                variant="solid"
+                colorPalette="gray"
+                mb="1"
+              >
+                {t('status.archived')}
+              </Badge>
+              <Text fontSize="xs" color="gray.500">
+                Start: {new Date(employee.created).toLocaleDateString()}
+              </Text>
+              {(employee as any).archiveDate && (
+                <Text fontSize="xs" color="gray.500">
+                  End: {new Date((employee as any).archiveDate).toLocaleDateString()}
+                </Text>
+              )}
+            </Box>
+          ) : (
+            <Badge
+              size="sm"
+              variant="solid"
+              colorPalette="green"
+            >
+              {t('status.active')}
+            </Badge>
+          )}
         </GridItem>
 
         {/* 6. Actions */}
         <GridItem onClick={(e) => e.stopPropagation()}>
-          <Menu.Root>
-            <Menu.Trigger asChild>
+          <MenuRoot>
+            <MenuTrigger asChild>
               <IconButton variant="ghost" size="xs" aria-label="Actions" color="gray.400" _hover={{ color: "gray.700", bg: "gray.100" }}>
                 <LuEllipsis />
               </IconButton>
-            </Menu.Trigger>
-            <Menu.Positioner>
-              <Menu.Content>
-                <Menu.Item value="edit" onClick={onEdit}>
-                  <LuPencil /> {t('actions.edit')}
-                </Menu.Item>
-                {employee.isArchived ? (
-                  <>
-                    <Menu.Item value="restore" onClick={onRestore}>
-                      <LuUndo /> {t('actions.restore')}
-                    </Menu.Item>
-                    <Menu.Separator />
-                    <Menu.Item value="delete" color="red.500" onClick={onDelete}>
-                      <LuTrash2 /> {t('actions.delete')}
-                    </Menu.Item>
-                  </>
-                ) : (
-                  <Menu.Item value="archive" color="red.500" onClick={onArchive}>
-                    <LuArchive /> {t('actions.archive')}
-                  </Menu.Item>
-                )}
-              </Menu.Content>
-            </Menu.Positioner>
-          </Menu.Root>
+            </MenuTrigger>
+            <MenuContent>
+              <MenuItem value="edit" onClick={onEdit}>
+                <LuPencil /> {t('actions.edit')}
+              </MenuItem>
+              {employee.isArchived ? (
+                <>
+                  <MenuItem value="restore" onClick={onRestore}>
+                    <LuUndo /> {t('actions.restore')}
+                  </MenuItem>
+                  <MenuSeparator />
+                  <MenuItem value="delete" color="red.500" onClick={onDelete}>
+                    <LuTrash2 /> {t('actions.delete')}
+                  </MenuItem>
+                </>
+              ) : (
+                <MenuItem value="archive" color="red.500" onClick={onArchive}>
+                  <LuArchive /> {t('actions.archive')}
+                </MenuItem>
+              )}
+            </MenuContent>
+          </MenuRoot>
         </GridItem>
 
       </Grid>

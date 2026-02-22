@@ -3,9 +3,9 @@
   "subtitle": "إدارة فريقك والرواتب والأداء.",
   "stats": {
     "totalPayroll": "إجمالي الرواتب",
-    "payrollTrend": "+2.4% من الشهر الماضي",
+    "sinceLast": "{{value}}% منذ آخر دفعة",
+    "firstPayout": "أول دفعة",
     "activeEmployees": "الموظفون النشطون",
-    "onLeaveCount": "2 في إجازة",
     "avgPerformance": "متوسط الأداء",
     "performanceTrend": "إنتاجية عالية"
   },
@@ -14,7 +14,7 @@
   },
   "viewAll": "عرض الكل",
   "active": "نشط",
-  "onLeave": "في إجازة",
+  "archived": "مؤرشف",
   "details": "التفاصيل",
   "netMonthly": "الصافي الشهري",
   "employee": {

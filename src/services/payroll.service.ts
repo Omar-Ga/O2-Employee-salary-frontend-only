@@ -2,35 +2,54 @@ import { Employee, Transaction, PayrollRun, PayrollSlip } from '@/types'
 import { DateTime } from 'luxon'
 import { pb } from '@/lib/pocketbase'
 
+/** Converts a raw transaction amount to its cash equivalent */
+const toCash = (t: Transaction, employee: Employee): number => {
+  const hourlyRate = employee.monthlySalary / employee.workHours
+  const dailyRate = employee.monthlySalary / 30
+  if (t.unit === 'cash') return t.amount
+  if (t.unit === 'hours') return t.amount * hourlyRate
+  if (t.unit === 'days') return t.amount * dailyRate
+  return 0
+}
+
 export const payrollService = {
-  calculateSlip: (employee: Employee, transactions: Transaction[]): Omit<PayrollSlip, 'id' | 'collectionId' | 'collectionName' | 'created' | 'updated'> => {
-    const hourlyRate = employee.monthlySalary / employee.workHours
-    const dailyRate = employee.monthlySalary / 30 // Standard 30 days calculation
+  /**
+   * Calculates a live slip preview (before closing the month).
+   * Returns granular category totals derived from raw transactions.
+   */
+  calculateSlip: (
+    employee: Employee,
+    transactions: Transaction[]
+  ): Omit<PayrollSlip, 'id' | 'collectionId' | 'collectionName' | 'created' | 'updated'> => {
+    const overtimeAmount = transactions
+      .filter(t => t.category === 'overtime')
+      .reduce((sum, t) => sum + toCash(t, employee), 0)
 
-    const calculateAmount = (t: Transaction) => {
-      if (t.unit === 'cash') return t.amount
-      if (t.unit === 'hours') return t.amount * hourlyRate
-      if (t.unit === 'days') return t.amount * dailyRate
-      return 0
-    }
+    const bonusAmount = transactions
+      .filter(t => t.category === 'bonus')
+      .reduce((sum, t) => sum + toCash(t, employee), 0)
 
-    const additions = transactions
-      .filter(t => t.type === 'addition')
-      .reduce((sum, t) => sum + calculateAmount(t), 0)
+    const deductionAmount = transactions
+      .filter(t => t.category === 'deduction')
+      .reduce((sum, t) => sum + toCash(t, employee), 0)
 
-    const deductions = transactions
-      .filter(t => t.type === 'deduction')
-      .reduce((sum, t) => sum + calculateAmount(t), 0)
+    const advanceAmount = transactions
+      .filter(t => t.category === 'advance')
+      .reduce((sum, t) => sum + toCash(t, employee), 0)
+
+    const totalAdditions = overtimeAmount + bonusAmount
+    const totalDeductions = deductionAmount + advanceAmount
 
     return {
       payrollRunId: '',
       employeeId: employee.id,
       departmentId: employee.department,
       basicSalary: employee.monthlySalary,
-      hourlyRate,
-      additions,
-      deductions,
-      netSalary: employee.monthlySalary + additions - deductions,
+      overtimeAmount,
+      bonusAmount,
+      deductionAmount,
+      advanceAmount,
+      netSalary: employee.monthlySalary + totalAdditions - totalDeductions,
       transactions: transactions as any
     }
   },
@@ -48,17 +67,18 @@ export const payrollService = {
 
     employees.forEach(emp => {
       const empTx = transactions.filter(t => t.employeeId === emp.id)
-      const slipStats = payrollService.calculateSlip(emp, empTx)
+      const slip = payrollService.calculateSlip(emp, empTx)
 
       batch.collection('payroll_slips').create({
         payrollRunId: run.id,
         employeeId: emp.id,
         departmentId: emp.department,
-        basicSalary: slipStats.basicSalary,
-        hourlyRate: slipStats.hourlyRate,
-        additions: slipStats.additions,
-        deductions: slipStats.deductions,
-        netSalary: slipStats.netSalary,
+        basicSalary: slip.basicSalary,
+        overtimeAmount: slip.overtimeAmount,
+        bonusAmount: slip.bonusAmount,
+        deductionAmount: slip.deductionAmount,
+        advanceAmount: slip.advanceAmount,
+        netSalary: slip.netSalary,
         transactions: empTx.map(t => t.id)
       })
     })
@@ -74,7 +94,10 @@ export const payrollService = {
 
   getHistory: async (): Promise<PayrollRun[]> => {
     const runs = await pb.collection('payroll_runs').getFullList({ sort: '-created' })
-    const slips = await pb.collection('payroll_slips').getFullList({ sort: '-created' })
+    const slips = await pb.collection('payroll_slips').getFullList({
+      sort: '-created',
+      expand: 'employeeId,transactions'
+    })
 
     return runs.map(run => {
       const runSlips = slips.filter(s => s.payrollRunId === run.id) as any
@@ -83,6 +106,25 @@ export const payrollService = {
         slips: runSlips
       } as PayrollRun
     })
+  },
+
+  /** Returns the total net payout of the most recent closed payroll run, or null if none exist. */
+  getLastClosedRunTotal: async (): Promise<{ total: number; period: string } | null> => {
+    try {
+      const lastRun = await pb.collection('payroll_runs').getFirstListItem(
+        "isClosed = true",
+        { sort: '-created' }
+      )
+
+      const slips = await pb.collection('payroll_slips').getFullList({
+        filter: `payrollRunId = "${lastRun.id}"`,
+      })
+
+      const total = slips.reduce((sum, s: any) => sum + (s.netSalary || 0), 0)
+      return { total, period: lastRun.period as string }
+    } catch {
+      // No closed run found
+      return null
+    }
   }
 }
-

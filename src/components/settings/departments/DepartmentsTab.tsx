@@ -1,34 +1,15 @@
-import {
-  DndContext,
-  DragOverlay,
-  useSensor,
-  useSensors,
-  PointerSensor,
-  KeyboardSensor,
-  closestCenter,
-  DragEndEvent,
-  DragStartEvent,
-  defaultDropAnimationSideEffects,
-  DropAnimation,
-  MeasuringStrategy,
-  useDroppable,
-} from "@dnd-kit/core"
-import {
-  SortableContext,
-  verticalListSortingStrategy,
-  sortableKeyboardCoordinates,
-} from "@dnd-kit/sortable"
-import { useState, useMemo } from "react"
-import { Box, Button, Heading, Text, Icon } from "@chakra-ui/react"
-
-import { LuSave, LuFolderOpen, LuPlus } from "react-icons/lu"
-import { nanoid } from "nanoid"
+import { useRef, useMemo, useState } from "react"
+import { Box, Button, Heading, Text, Icon, Spinner } from "@chakra-ui/react"
+import { LuFolderOpen, LuPlus } from "react-icons/lu"
 import { useTranslation } from "react-i18next"
+import { useQuery, useMutation, useQueryClient } from "@tanstack/react-query"
+import { Tree, TreeApi } from "react-arborist"
 
-import { Department } from "./types"
-import { flatten, buildTree, reorderTree, isAncestorCollapsed } from "./utils"
+import { departmentService } from "@/services/department.service"
+import { DepartmentNode } from "./types"
+import { flatRecordsToTree } from "./utils"
 import { DepartmentItem } from "./DepartmentItem"
-import { DeleteDropZone } from "./DeleteDropZone"
+import { toaster } from "@/components/ui/toaster"
 import {
   DialogBody,
   DialogCloseTrigger,
@@ -40,358 +21,211 @@ import {
   DialogDescription,
 } from "@/components/ui/dialog"
 
-
-const dropAnimation: DropAnimation = {
-  sideEffects: defaultDropAnimationSideEffects({
-    styles: {
-      active: { opacity: '0.5' },
-    },
-  }),
-}
-
-const INITIAL_DATA: Department[] = []
-
 export const DepartmentsTab = () => {
-  const { t } = useTranslation('departments')
-  const [items, setItems] = useState<Department[]>(INITIAL_DATA)
-  const [activeId, setActiveId] = useState<string | null>(null)
-  const [hasChanges, setHasChanges] = useState(false)
-  const [isDeleteDialogOpen, setIsDeleteDialogOpen] = useState(false)
-  const [pendingDeleteId, setPendingDeleteId] = useState<string | null>(null)
+  const { t } = useTranslation(['departments'])
+  const queryClient = useQueryClient()
+  const treeRef = useRef<TreeApi<DepartmentNode>>(null)
 
-  const fullFlattenedItems = useMemo(() => {
-    return flatten(items)
-  }, [items])
+  const [deleteData, setDeleteData] = useState<{ id: string, hasChildren: boolean } | null>(null)
+  const [selectedDepartmentId, setSelectedDepartmentId] = useState<string | null>(null)
 
-  const visibleItems = useMemo(() => {
-    return fullFlattenedItems.filter((item) => {
-      // Check if the item itself or any of its ancestors are collapsed
-      return !isAncestorCollapsed(item, fullFlattenedItems)
-    })
-  }, [fullFlattenedItems])
-
-  const sensors = useSensors(
-    useSensor(PointerSensor, {
-      activationConstraint: { distance: 5 },
-    }),
-    useSensor(KeyboardSensor, {
-      coordinateGetter: sortableKeyboardCoordinates,
-    })
-  )
-
-  const activeItem = useMemo(() => {
-    if (!activeId) return null
-    return fullFlattenedItems.find((item) => item.id === activeId)
-  }, [activeId, fullFlattenedItems])
-
-  function handleDragStart(event: DragStartEvent) {
-    const { active } = event
-    setActiveId(active.id as string)
-  }
-
-  function handleAddDepartment() {
-    const newId = nanoid()
-    const newDept: Department = {
-      id: newId,
-      name: "New Department",
-      type: 'default',
-      children: [],
-      collapsed: false
-    }
-    setItems([...items, newDept])
-    setHasChanges(true)
-  }
-
-  function handleDragEnd(event: DragEndEvent) {
-    const { active, over } = event
-    resetState()
-
-    if (!over) return
-
-    // If dragging over itself, checking if we need to update indentation
-    if (active.id === over.id) {
-      const dragOffset = (active.rect.current.translated?.left ?? 0) - (active.rect.current.initial?.left ?? 0)
-
-      // Only process if there's a significant horizontal movement (e.g. > 10px)
-      // and we are not just clicking.
-      if (Math.abs(dragOffset) > 10) {
-        const newFlattened = reorderTree(
-          fullFlattenedItems,
-          active.id as string,
-          over.id as string,
-          dragOffset,
-          28 // indentation width
-        )
-
-        // Only update if something actually changed
-        if (JSON.stringify(newFlattened) !== JSON.stringify(fullFlattenedItems)) {
-          setItems(buildTree(newFlattened))
-          setHasChanges(true)
-        }
-      }
-      return
-    }
-
-    if (active.id !== over.id) {
-      // Check for delete zone drop
-      if (over.id === 'delete-zone') {
-        const itemToDelete = fullFlattenedItems.find(i => i.id === active.id)
-        if (!itemToDelete) return
-
-        if (itemToDelete.childCount > 0) {
-          // Parent with children: ask for confirmation
-          setPendingDeleteId(active.id as string)
-          setIsDeleteDialogOpen(true)
-        } else {
-          // No children: delete immediately
-          handleDeleteDepartment(active.id as string)
-        }
-        return
-      }
-
-      const dragOffset = (active.rect.current.translated?.left ?? 0) - (active.rect.current.initial?.left ?? 0)
-
-      const newFlattened = reorderTree(
-        fullFlattenedItems,
-        active.id as string,
-        over.id as string,
-        dragOffset,
-        24
-      )
-
-      setItems(buildTree(newFlattened))
-      setHasChanges(true)
-    }
-  }
-
-  function resetState() {
-    setActiveId(null)
-  }
-
-  function handleToggleCollapse(id: string) {
-    setItems(prevItems => {
-      const toggleInTree = (nodes: Department[]): Department[] => {
-        return nodes.map(node => {
-          if (node.id === id) {
-            return { ...node, collapsed: !node.collapsed }
-          }
-          if (node.children.length > 0) {
-            return { ...node, children: toggleInTree(node.children) }
-          }
-          return node
-        })
-      }
-      return toggleInTree(prevItems)
-    })
-  }
-
-  function handleExpandAll() {
-    setItems(prevItems => {
-      const expandTree = (nodes: Department[]): Department[] => {
-        return nodes.map(node => ({
-          ...node,
-          collapsed: false,
-          children: expandTree(node.children)
-        }))
-      }
-      return expandTree(prevItems)
-    })
-  }
-
-  function handleCollapseAll() {
-    setItems(prevItems => {
-      const collapseTree = (nodes: Department[]): Department[] => {
-        return nodes.map(node => ({
-          ...node,
-          collapsed: true,
-          children: collapseTree(node.children)
-        }))
-      }
-      return collapseTree(prevItems)
-    })
-  }
-
-  function handleSave() {
-    setHasChanges(false)
-  }
-
-  function handleDeleteDepartment(id: string) {
-    setItems(prevItems => {
-      const deleteFromTree = (nodes: Department[]): Department[] => {
-        return nodes
-          .filter(node => node.id !== id)
-          .map(node => ({
-            ...node,
-            children: deleteFromTree(node.children)
-          }))
-      }
-      return deleteFromTree(prevItems)
-    })
-    setHasChanges(true)
-  }
-
-  function handleConfirmDeleteWithChildren() {
-    if (pendingDeleteId) {
-      handleDeleteDepartment(pendingDeleteId)
-      setPendingDeleteId(null)
-      setIsDeleteDialogOpen(false)
-    }
-  }
-
-  function handlePromoteChildrenThenDelete() {
-    if (!pendingDeleteId) return
-
-    setItems(prevItems => {
-      // 1. Find the node to delete and get its children
-      let childrenToPromote: Department[] = []
-
-      const findAndGetChildren = (nodes: Department[]): Department | null => {
-        for (const node of nodes) {
-          if (node.id === pendingDeleteId) {
-            return node
-          }
-          const found = findAndGetChildren(node.children)
-          if (found) return found
-        }
-        return null
-      }
-
-      const nodeToDelete = findAndGetChildren(prevItems)
-      if (nodeToDelete) {
-        childrenToPromote = [...nodeToDelete.children]
-      }
-
-      // 2. Remove the node
-      const deleteFromTree = (nodes: Department[]): Department[] => {
-        return nodes
-          .filter(node => node.id !== pendingDeleteId)
-          .map(node => ({
-            ...node,
-            children: deleteFromTree(node.children)
-          }))
-      }
-
-      const newItems = deleteFromTree(prevItems)
-
-      // 3. Append children to the root level (or we could try to put them in place of parent, 
-      // but "converted all into parent depts" usually implies moving to root level
-      // like "ungrouping")
-      return [...newItems, ...childrenToPromote]
-    })
-
-    setHasChanges(true)
-    setPendingDeleteId(null)
-    setIsDeleteDialogOpen(false)
-  }
-
-  function handleRenameDepartment(id: string, newName: string) {
-    setItems(prevItems => {
-      const renameInTree = (nodes: Department[]): Department[] => {
-        return nodes.map(node => {
-          if (node.id === id) {
-            return { ...node, name: newName }
-          }
-          return {
-            ...node,
-            children: renameInTree(node.children)
-          }
-        })
-      }
-      return renameInTree(prevItems)
-    })
-    setHasChanges(true)
-  }
-
-  const { setNodeRef: setDroppableRef } = useDroppable({
-    id: 'root-droppable-zone',
+  const { data: rawDepartments, isLoading: isFetching } = useQuery({
+    queryKey: ['departments'],
+    queryFn: departmentService.getAll
   })
 
+  const treeData = useMemo(() => {
+    if (!rawDepartments) return []
+    return flatRecordsToTree(rawDepartments)
+  }, [rawDepartments])
+
+  // --- MUTATIONS ---
+  const invalidate = () => queryClient.invalidateQueries({ queryKey: ['departments'] })
+
+  const createMutation = useMutation({
+    mutationFn: async ({ name, parentId, type }: { name: string, parentId?: string, type: string }) => {
+      const payload: any = { name, type }
+      if (parentId) payload.parentId = parentId
+      return await departmentService.create(payload)
+    },
+    onSuccess: invalidate,
+    onError: (err: any) => toaster.create({ title: t('errors.create') || "Error", description: err.message, type: "error" })
+  })
+
+  const renameMutation = useMutation({
+    mutationFn: async ({ id, name }: { id: string, name: string }) => {
+      return await departmentService.update(id, { name })
+    },
+    onSuccess: invalidate,
+    onError: (err: any) => toaster.create({ title: t('errors.update') || "Error", description: err.message, type: "error" })
+  })
+
+  const deleteMutation = useMutation({
+    mutationFn: async (id: string) => {
+      return await departmentService.delete(id)
+    },
+    onSuccess: () => {
+      invalidate()
+    },
+    onError: (err: any) => toaster.create({ title: t('errors.delete') || "Error", description: err.message, type: "error" })
+  })
+
+  // --- TREE EVENTS ---
+
+  const handleCreate = ({ parentId }: { parentId: string | null }) => {
+    const parentType = parentId ? 'functional' : 'structural'
+    createMutation.mutate({
+      name: t('newItem'),
+      ...(parentId ? { parentId } : {}),
+      type: parentType
+    })
+    return null // react-arborist expects an object with id if sync, or null/Promise
+  }
+
+  const handleRename = ({ id, name }: { id: string, name: string }) => {
+    renameMutation.mutate({ id, name })
+  }
+
+  const handleDeleteRequest = ({ ids }: { ids: string[] }) => {
+    if (ids.length === 0) return
+    const id = ids[0] // We only care about single operations
+    const node = treeRef.current?.get(id)
+    if (!node) return
+    const hasChildren = node.children && node.children.length > 0
+
+    if (hasChildren) {
+      setDeleteData({ id, hasChildren: true })
+    } else {
+      deleteMutation.mutate(id)
+    }
+  }
+
+  const confirmDeleteWithChildren = async () => {
+    if (!deleteData) return
+
+    // Deleting parent auto-deletes children in many DBs, but to be safe and explicit:
+    // Actually, PocketBase cascading depends on schema setup. We will delete manually.
+    const node = treeRef.current?.get(deleteData.id)
+    if (node && node.children) {
+      for (const child of node.children) {
+        await departmentService.delete(child.id)
+      }
+    }
+
+    deleteMutation.mutate(deleteData.id, {
+      onSuccess: () => {
+        if (deleteData.id === selectedDepartmentId) setSelectedDepartmentId(null)
+        setDeleteData(null)
+      }
+    })
+  }
+
+  const confirmKeepChildren = async () => {
+    if (!deleteData) return
+
+    const node = treeRef.current?.get(deleteData.id)
+    if (node && node.children) {
+      for (const child of node.children) {
+        // PocketBase handles removing a relation with a null value rather than an empty string
+        await departmentService.update(child.id, { parentId: null, type: "structural" })
+      }
+    }
+
+    deleteMutation.mutate(deleteData.id, {
+      onSuccess: () => {
+        if (deleteData.id === selectedDepartmentId) setSelectedDepartmentId(null)
+        setDeleteData(null)
+      }
+    })
+  }
+
+
   return (
-    <DndContext
-      sensors={sensors}
-      collisionDetection={closestCenter}
-      measuring={{ droppable: { strategy: MeasuringStrategy.Always } }}
-      onDragStart={handleDragStart}
-      onDragEnd={handleDragEnd}
-      onDragCancel={resetState}
-    >
-
-      <Box>
-        <Box mb={4} display="flex" justifyContent="space-between" alignItems="center">
-          <Box>
-            <Heading size="md" color="gray.700">{t('title')}</Heading>
-            <Text fontSize="sm" color="gray.500">{t('subtitle')}</Text>
-          </Box>
-          <Box display="flex" gap={2}>
-            <Button size="xs" variant="outline" onClick={handleExpandAll}>{t('actions.expandAll')}</Button>
-            <Button size="xs" variant="outline" onClick={handleCollapseAll}>{t('actions.collapseAll')}</Button>
-            <Button
-              size="sm"
-              variant="outline"
-              onClick={handleAddDepartment}
-            >
-              <Icon as={LuPlus} mr={1} />
-              {t('actions.addDepartment')}
-            </Button>
-            <Button
-              size="sm"
-              colorPalette="oxygen"
-              disabled={!hasChanges}
-              onClick={handleSave}
-            >
-              <Icon as={LuSave} mr={1} />
-              {t('save')}
-            </Button>
-          </Box>
+    <Box>
+      <Box mb={4} display="flex" justifyContent="space-between" alignItems="center">
+        <Box>
+          <Heading size="md" color="gray.700">{t('title')}</Heading>
+          <Text fontSize="sm" color="gray.500">{t('subtitle')}</Text>
         </Box>
-
-        <Box
-          ref={setDroppableRef}
-          bg="gray.50"
-          p={6}
-          borderRadius="xl"
-          minH="600px"
-          border="1px dashed"
-          borderColor="gray.300"
-          id="canvas-drop-zone"
-        >
-          <SortableContext items={visibleItems.map(d => d.id)} strategy={verticalListSortingStrategy}>
-            {visibleItems.map((item) => (
-              <DepartmentItem
-                key={item.id}
-                department={item}
-                depth={item.depth}
-                color={item.color}
-                isCollapsed={item.collapsed}
-                onToggleCollapse={() => handleToggleCollapse(item.id)}
-                onRename={(newName) => handleRenameDepartment(item.id, newName)}
-              />
-            ))}
-
-            {visibleItems.length === 0 && (
-              <Box
-                h="full"
-                display="flex"
-                alignItems="center"
-                justifyContent="center"
-                color="gray.400"
-                flexDir="column"
-                gap={2}
-                mt={20}
-                cursor="pointer"
-                onClick={handleAddDepartment}
-              >
-                <Icon as={LuFolderOpen} boxSize={10} color="gray.300" />
-                <Text fontWeight="medium">{t('emptyState.title')}</Text>
-                <Text fontSize="sm">{t('emptyState.subtitle')}</Text>
-              </Box>
-            )}
-          </SortableContext>
-          <DeleteDropZone isActive={!!activeId} />
+        <Box display="flex" gap={2}>
+          <Button size="xs" variant="outline" onClick={() => treeRef.current?.openAll()}>{t('actions.expandAll')}</Button>
+          <Button size="xs" variant="outline" onClick={() => treeRef.current?.closeAll()}>{t('actions.collapseAll')}</Button>
+          <Button
+            size="sm"
+            colorPalette="oxygen"
+            variant="outline"
+            loading={createMutation.isPending}
+            onClick={() => handleCreate({ parentId: selectedDepartmentId })}
+            disabled={!selectedDepartmentId}
+          >
+            <Icon as={LuPlus} mr={1} />
+            {t('actions.addSubdepartment')}
+          </Button>
+          <Button
+            size="sm"
+            colorPalette="oxygen"
+            loading={createMutation.isPending}
+            onClick={() => handleCreate({ parentId: null })}
+          >
+            <Icon as={LuPlus} mr={1} />
+            {t('actions.addDepartment')}
+          </Button>
         </Box>
       </Box>
 
-      <DialogRoot open={isDeleteDialogOpen} onOpenChange={(e) => setIsDeleteDialogOpen(e.open)}>
+      <Box
+        bg="gray.50"
+        p={6}
+        borderRadius="xl"
+        minH="600px"
+        border="1px dashed"
+        borderColor="gray.300"
+      >
+        {isFetching ? (
+          <Box h="full" display="flex" alignItems="center" justifyContent="center">
+            <Spinner color="oxygen.500" />
+          </Box>
+        ) : treeData.length === 0 ? (
+          <Box
+            h="full"
+            display="flex"
+            alignItems="center"
+            justifyContent="center"
+            color="gray.400"
+            flexDir="column"
+            gap={2}
+            mt={20}
+            cursor="pointer"
+            onClick={() => handleCreate({ parentId: null })}
+          >
+            <Icon as={LuFolderOpen} boxSize={10} color="gray.300" />
+            <Text fontWeight="medium">{t('emptyState.title')}</Text>
+            <Text fontSize="sm">{t('emptyState.subtitle')}</Text>
+          </Box>
+        ) : (
+          <Box h="600px">
+            <Tree
+              ref={treeRef}
+              data={treeData}
+              width="100%"
+              height={600}
+              indent={24}
+              rowHeight={50}
+              padding={15}
+              // Callbacks
+              onCreate={handleCreate}
+              onRename={handleRename}
+              onDelete={handleDeleteRequest}
+              onSelect={(nodes) => setSelectedDepartmentId(nodes.length > 0 ? nodes[0].id : null)}
+            >
+              {DepartmentItem}
+            </Tree>
+          </Box>
+        )}
+      </Box>
+
+      {/* Delete Confirmation Dialog */}
+      <DialogRoot open={!!deleteData} onOpenChange={(e) => { if (!e.open) setDeleteData(null) }}>
         <DialogContent>
           <DialogHeader>
             <DialogTitle>{t('deleteDialog.title')}</DialogTitle>
@@ -402,30 +236,19 @@ export const DepartmentsTab = () => {
             </DialogDescription>
           </DialogBody>
           <DialogFooter>
-            <Button variant="outline" onClick={() => setIsDeleteDialogOpen(false)}>
+            <Button variant="outline" onClick={() => setDeleteData(null)}>
               {t('deleteDialog.cancel')}
             </Button>
-            <Button colorPalette="blue" onClick={handlePromoteChildrenThenDelete}>
+            <Button colorPalette="blue" onClick={confirmKeepChildren} loading={deleteMutation.isPending}>
               {t('deleteDialog.keepChildren')}
             </Button>
-            <Button colorPalette="red" onClick={handleConfirmDeleteWithChildren}>
+            <Button colorPalette="red" onClick={confirmDeleteWithChildren} loading={deleteMutation.isPending}>
               {t('deleteDialog.deleteAll')}
             </Button>
           </DialogFooter>
           <DialogCloseTrigger />
         </DialogContent>
       </DialogRoot>
-
-      <DragOverlay dropAnimation={dropAnimation}>
-        {activeItem ? (
-          <DepartmentItem
-            department={activeItem}
-            depth={0}
-            color={activeItem.color}
-            isOverlay
-          />
-        ) : null}
-      </DragOverlay>
-    </DndContext>
+    </Box>
   )
 }

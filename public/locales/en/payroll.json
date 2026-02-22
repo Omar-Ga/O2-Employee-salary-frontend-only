@@ -4,7 +4,8 @@
     "history": "History"
   },
   "run": {
-    "closeMonth": "Close Month & Generate Slips",
+    "closeMonth": "Close Month",
+    "backToHistory": "Back to History",
     "table": {
       "employee": "Employee",
       "basic": "Basic",
@@ -13,6 +14,11 @@
       "netSalary": "Net Salary",
       "manage": "Manage"
     },
+    "employeesCount": "Employees",
+    "totalBasic": "Total Basic",
+    "totalNet": "Total Net",
+    "globalTotalBasic": "Total Basic Payroll",
+    "globalTotalNet": "Total Net Payout",
     "toast": {
       "monthClosed": "Month Closed & Slips Generated",
       "transactionAdded": "Transaction added"
@@ -77,6 +83,26 @@
   "units": {
     "hours": "Hours",
     "days": "Days",
-    "cash": "Cash Amount"
+    "cash": "",
+    "perHour": "/hr"
+  },
+  "payslip": {
+    "title": "Payslip",
+    "employeeName": "Employee Name",
+    "period": "Period",
+    "basicSalary": "Basic Salary",
+    "additions": "Additions",
+    "deductions": "Deductions",
+    "deductionsList": "Deductions",
+    "netSalary": "Net Salary",
+    "breakdown": "Financial Breakdown",
+    "overtime": "Overtime",
+    "bonus": "Bonus",
+    "deduction": "Deduction",
+    "advance": "Advance (Loan)",
+    "totalAdditions": "Total Additions",
+    "totalDeductions": "Total Deductions",
+    "employeeSignature": "Employee Signature",
+    "managerSignature": "Manager Signature"
   }
 }

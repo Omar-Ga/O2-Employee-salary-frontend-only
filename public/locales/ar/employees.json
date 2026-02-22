@@ -1,15 +1,19 @@
 {
   "actions": {
     "addEmployee": "إضافة موظف",
+    "edit": "تعديل",
+    "delete": "حذف",
     "restore": "استعادة",
     "archive": "أرشفة",
     "create": "إنشاء موظف",
+    "update": "تحديث الموظف",
     "selectDepartment": "اختر القسم",
     "searchPlaceholder": "بحث عن موظفين...",
     "filterDept": "تصفية الأقسام"
   },
   "drawer": {
-    "title": "إضافة موظف جديد"
+    "title": "إضافة موظف جديد",
+    "editTitle": "تعديل بيانات الموظف"
   },
   "tabs": {
     "active": "الموظفين النشطين",
@@ -48,7 +52,8 @@
   "toast": {
     "archived": "تم أرشفة الموظف",
     "restored": "تم استعادة الموظف",
-    "created": "تم إنشاء الموظف"
+    "created": "تم إنشاء الموظف",
+    "updated": "تم تحديث بيانات الموظف"
   },
   "status": {
     "active": "نشط",

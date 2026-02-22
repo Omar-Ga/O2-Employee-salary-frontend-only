@@ -1,6 +1,5 @@
 import { useQuery } from '@tanstack/react-query'
 import { departmentService } from '@/services/department.service'
-import { DEPARTMENT_CONFIG as STATIC_CONFIG } from '@/lib/departments'
 import { useMemo } from 'react'
 import type { DepartmentConfig } from '@/lib/departments'
 
@@ -12,7 +11,7 @@ export const useDepartments = () => {
     })
 
     const departmentConfig = useMemo(() => {
-        if (departments.length === 0) return STATIC_CONFIG
+        if (departments.length === 0) return []
 
         // Transform PB departments into DepartmentConfig structure
         // 1. Find root departments (type=structural usually, or no parentId)
@@ -26,7 +25,7 @@ export const useDepartments = () => {
             // Our seed didn't preserve IDs like "engineering". 
             // We can match by name with static config to get colors?
 
-            const staticMatch = STATIC_CONFIG.find(c => c.label === root.name || c.id === root.name.toLowerCase())
+            const colorPalette = (root as any).colorPalette || 'gray'
 
             const subs = subDepts
                 .filter((sub: any) => sub.parentId === root.id)
@@ -38,7 +37,7 @@ export const useDepartments = () => {
             return {
                 id: root.id,
                 label: root.name,
-                colorPalette: staticMatch?.colorPalette || 'gray', // Fallback color
+                colorPalette: colorPalette, // Fallback color
                 subDepartments: subs
             } as DepartmentConfig
         })
