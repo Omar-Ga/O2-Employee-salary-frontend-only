@@ -28,8 +28,8 @@ export type HTMLString = string
 
 type ExpandType<T> = unknown extends T
 	? T extends unknown
-	? { expand?: unknown }
-	: { expand: T }
+		? { expand?: unknown }
+		: { expand: T }
 	: { expand: T }
 
 // System fields
@@ -115,16 +115,7 @@ export enum EmployeesGradeOptions {
 	"Good" = "Good",
 	"Bad" = "Bad",
 }
-
-// Domain type: shape of the `scores` JSON field on the employees collection.
-// The auto-generator cannot infer this — keep it in sync with AddEmployeeForm.tsx.
-export interface EmployeeScores {
-	performance: number
-	dedication: number
-	responsibility: number
-}
-
-export type EmployeesRecord<Tscores = EmployeeScores> = {
+export type EmployeesRecord<Tscores = unknown> = {
 	archiveDate?: IsoDateString
 	created: IsoAutoDateString
 	department: RecordIdString
@@ -145,9 +136,12 @@ export type EmployeesRecord<Tscores = EmployeeScores> = {
 export type PayrollRunsRecord = {
 	created: IsoAutoDateString
 	date: IsoDateString
+	employeeCount?: number
 	id: string
 	isClosed?: boolean
 	period: string
+	totalBasic?: number
+	totalNet?: number
 	updated: IsoAutoDateString
 }
 
@@ -264,13 +258,13 @@ export type CollectionResponses = {
 
 type ProcessCreateAndUpdateFields<T> = Omit<{
 	// Omit AutoDate fields
-	[K in keyof T as Extract<T[K], IsoAutoDateString> extends never ? K : never]:
-	// Convert FileNameString to File
-	T[K] extends infer U ?
-	U extends (FileNameString | FileNameString[]) ?
-	U extends any[] ? File[] : File
-	: U
-	: never
+	[K in keyof T as Extract<T[K], IsoAutoDateString> extends never ? K : never]: 
+		// Convert FileNameString to File
+		T[K] extends infer U ? 
+			U extends (FileNameString | FileNameString[]) ? 
+				U extends any[] ? File[] : File 
+			: U
+		: never
 }, 'id'>
 
 // Create type for Auth collections
@@ -308,14 +302,14 @@ export type UpdateBase<T> = Partial<
 // Get the correct create type for any collection
 export type Create<T extends keyof CollectionResponses> =
 	CollectionResponses[T] extends AuthSystemFields
-	? CreateAuth<CollectionRecords[T]>
-	: CreateBase<CollectionRecords[T]>
+		? CreateAuth<CollectionRecords[T]>
+		: CreateBase<CollectionRecords[T]>
 
 // Get the correct update type for any collection
 export type Update<T extends keyof CollectionResponses> =
 	CollectionResponses[T] extends AuthSystemFields
-	? UpdateAuth<CollectionRecords[T]>
-	: UpdateBase<CollectionRecords[T]>
+		? UpdateAuth<CollectionRecords[T]>
+		: UpdateBase<CollectionRecords[T]>
 
 // Type for usage with type asserted PocketBase instance
 // https://github.com/pocketbase/js-sdk#specify-typescript-definitions

@@ -33,7 +33,10 @@ export const Employees = () => {
   // Data Fetching
   const { data: employees = [], isLoading } = useQuery({
     queryKey: ['employees'],
-    queryFn: employeeService.getAll
+    queryFn: async () => {
+      const result = await employeeService.getAll(1, 1000)
+      return result.items
+    }
   })
 
   // Mutations

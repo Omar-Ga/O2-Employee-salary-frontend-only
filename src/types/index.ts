@@ -30,7 +30,7 @@ export type TransactionType = Transaction['type']
 export type TransactionCategory = Transaction['category']
 
 export type PayrollRun = Omit<PayrollRunsResponse, 'slips'> & {
-  slips: PayrollSlip[]
+  slips?: PayrollSlip[]
 }
 
 export type PayrollSlip = Omit<PayrollSlipsResponse, 'transactions'> & {

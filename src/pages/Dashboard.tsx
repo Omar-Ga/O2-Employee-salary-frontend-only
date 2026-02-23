@@ -10,11 +10,11 @@ export const Dashboard = () => {
   const { t } = useTranslation(['dashboard'])
   const { currentNetTotal, percentChange, activeCount, currentDeductionRate, deductionRateChange } = useDashboardStats()
 
-  const { data: employees = [] } = useQuery({
-    queryKey: ['employees'],
-    queryFn: employeeService.getAll,
-    select: (data) => data.filter(e => !e.isArchived)
+  const { data: employeesData } = useQuery({
+    queryKey: ['employees', 'active', 1],
+    queryFn: () => employeeService.getActive(1, 5)
   })
+  const employees = employeesData?.items || []
 
   // undefined = still loading, null = confirmed no previous run, number = delta
   const payrollHelpText = percentChange === undefined

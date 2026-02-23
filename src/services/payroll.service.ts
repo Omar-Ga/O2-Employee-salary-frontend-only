@@ -1,13 +1,25 @@
 import { Employee, Transaction, PayrollRun, PayrollSlip } from '@/types'
-import { PayrollRunsResponse, PayrollSlipsResponse, EmployeesResponse, TransactionsResponse } from '@/types/pocketbase-types'
-import { DateTime } from 'luxon'
+import { PayrollSlipsResponse, EmployeesResponse, TransactionsResponse } from '@/types/pocketbase-types'
 import { pb } from '@/lib/pocketbase'
+import type { ListResult } from 'pocketbase'
 
 // Expanded slip type for history queries that include employee + transaction relations
 type ExpandedPayrollSlip = PayrollSlipsResponse<{
   employeeId: EmployeesResponse
   transactions: TransactionsResponse[]
 }>
+
+export interface PayrollStats {
+  activeCount: number
+  currentNetTotal: number
+  currentDeductionTotal: number
+  currentGross: number
+  currentDeductionRate: number
+  lastRunTotal: number
+  lastPeriod: string | null
+  percentChange: number | null
+  deductionRateChange: number | null
+}
 
 /** Converts a raw transaction amount to its cash equivalent */
 const toCash = (t: Transaction, employee: Employee): number => {
@@ -61,66 +73,29 @@ export const payrollService = {
     }
   },
 
-  closeMonth: async (employees: Employee[], transactions: Transaction[]) => {
-    const currentMonth = DateTime.now().toFormat('yyyy-MM')
-
-    const run = await pb.collection('payroll_runs').create({
-      period: currentMonth,
-      date: DateTime.now().toISO()!,
-      isClosed: true
-    })
-
-    const batch = pb.createBatch()
-
-    employees.forEach(emp => {
-      const empTx = transactions.filter(t => t.employeeId === emp.id)
-      const slip = payrollService.calculateSlip(emp, empTx)
-
-      batch.collection('payroll_slips').create({
-        payrollRunId: run.id,
-        employeeId: emp.id,
-        departmentId: emp.department,
-        basicSalary: slip.basicSalary,
-        overtimeAmount: slip.overtimeAmount,
-        bonusAmount: slip.bonusAmount,
-        deductionAmount: slip.deductionAmount,
-        advanceAmount: slip.advanceAmount,
-        netSalary: slip.netSalary,
-        transactions: empTx.map(t => t.id)
-      })
-    })
-
-    transactions.forEach(tx => {
-      batch.collection('transactions').update(tx.id, { isClosed: true })
-    })
-
-    await batch.send()
-
-    return run
+  closeMonth: async () => {
+    return await pb.send('/api/payroll/close', { method: 'POST' })
   },
 
-  getHistory: async (): Promise<PayrollRun[]> => {
-    const runs = await pb.collection('payroll_runs').getFullList<PayrollRunsResponse>({ sort: '-created' })
+  getRuns: async (page = 1, perPage = 10): Promise<ListResult<PayrollRun>> => {
+    return await pb.collection('payroll_runs').getList<PayrollRun>(page, perPage, {
+      sort: '-created',
+    })
+  },
+
+  getRunSlips: async (runId: string): Promise<PayrollSlip[]> => {
     const slips = await pb.collection('payroll_slips').getFullList<ExpandedPayrollSlip>({
+      filter: `payrollRunId = "${runId}"`,
       sort: '-created',
       expand: 'employeeId,transactions'
     })
 
-    return runs.map(run => {
-      const runSlips = slips
-        .filter(s => s.payrollRunId === run.id)
-        .map(s => ({
-          ...s,
-          employeeName: s.expand?.employeeId?.name,
-          employeeJobTitle: s.expand?.employeeId?.jobTitle,
-          transactions: s.expand?.transactions || []
-        } as unknown as PayrollSlip))
-
-      return {
-        ...run,
-        slips: runSlips
-      } as PayrollRun
-    })
+    return slips.map(s => ({
+      ...s,
+      employeeName: s.expand?.employeeId?.name,
+      employeeJobTitle: s.expand?.employeeId?.jobTitle,
+      transactions: s.expand?.transactions || []
+    } as unknown as PayrollSlip))
   },
 
   /** Returns totals from the last closed payroll run, or null if none exist.
@@ -154,5 +129,9 @@ export const payrollService = {
       // No closed run found
       return null
     }
+  },
+
+  getStats: async (): Promise<PayrollStats> => {
+    return await pb.send('/api/payroll/stats', { method: 'GET' })
   }
 }

@@ -75,7 +75,10 @@ export const TransactionDrawer = ({ open, onOpenChange, employeeIds, onSuccess }
 
   const { data: employees = [] } = useQuery({
     queryKey: ['employees'],
-    queryFn: employeeService.getAll,
+    queryFn: async () => {
+      const result = await employeeService.getAll(1, 1000)
+      return result.items
+    },
   })
 
   const isBulk = employeeIds.length > 1
@@ -88,7 +91,11 @@ export const TransactionDrawer = ({ open, onOpenChange, employeeIds, onSuccess }
   // Load existing transactions for preview
   const { data: existingTransactions = [] } = useQuery({
     queryKey: ['transactions', singleEmployee?.id],
-    queryFn: () => transactionService.getAll(singleEmployee?.id),
+    queryFn: async () => {
+      if (!singleEmployee?.id) return []
+      const result = await transactionService.getAll(1, 100, singleEmployee.id)
+      return result.items
+    },
     enabled: !!singleEmployee && open,
   })
 

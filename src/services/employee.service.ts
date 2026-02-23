@@ -2,15 +2,24 @@ import { pb } from '@/lib/pocketbase'
 import { Collections } from '@/types/pocketbase-types'
 import { Employee } from '@/types'
 import { EmployeesRecord } from '@/types/pocketbase-types'
+import type { ListResult } from 'pocketbase'
 
 // Map PocketBase response to UI Employee type if needed, or use directly
 // For now, we will use the generated types directly in the app to avoid mapping overhead
 
 export const employeeService = {
-  getAll: async (): Promise<Employee[]> => {
-    return await pb.collection(Collections.Employees).getFullList({
+  getAll: async (page = 1, perPage = 50): Promise<ListResult<Employee>> => {
+    return await pb.collection(Collections.Employees).getList(page, perPage, {
       sort: '-created',
       expand: 'department',
+    })
+  },
+
+  getActive: async (page = 1, perPage = 50): Promise<ListResult<Employee>> => {
+    return await pb.collection(Collections.Employees).getList(page, perPage, {
+      sort: '-created',
+      expand: 'department',
+      filter: 'isArchived = false'
     })
   },
 

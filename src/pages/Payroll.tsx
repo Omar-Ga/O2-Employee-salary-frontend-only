@@ -1,10 +1,10 @@
-import { Box, Button, HStack, Heading, Badge, Text, Tabs, Stack, Icon } from "@chakra-ui/react"
+import { Box, Button, HStack, Heading, Badge, Text, Tabs, Stack, Icon, Spinner, Center } from "@chakra-ui/react"
 import { useTranslation } from "react-i18next"
 import { employeeService } from "@/services/employee.service"
 import { useQuery, useMutation, useQueryClient } from "@tanstack/react-query"
 import { payrollService } from "@/services/payroll.service"
 import { transactionService } from "@/services/transaction.service"
-import { LuWallet, LuHistory, LuCheck, LuTrendingUp, LuDollarSign, LuPrinter } from "react-icons/lu"
+import { LuWallet, LuHistory, LuCheck, LuTrendingUp, LuDollarSign } from "react-icons/lu"
 import { formatCurrency } from "@/lib/utils"
 import { useState, useMemo } from "react"
 import { toaster } from "@/components/ui/toaster"
@@ -12,10 +12,7 @@ import { TransactionDrawer } from "@/components/transactions/TransactionDrawer"
 import { useDepartments } from "@/hooks/useDepartments"
 import { DepartmentPayrollGroup } from "@/components/payroll/DepartmentPayrollGroup"
 import { HistoricalDepartmentPayrollGroup } from "@/components/payroll/HistoricalDepartmentPayrollGroup"
-import { useRef } from "react"
 import { PayrollRun, PayrollSlip } from "@/types"
-import { useReactToPrint } from "react-to-print"
-import { PayslipsPrintTemplate } from "@/components/payroll/PayslipsPrintTemplate"
 
 export const Payroll = () => {
   const { t } = useTranslation(['payroll', 'sidebar'])
@@ -48,15 +45,31 @@ export const Payroll = () => {
 
 const PayrollRunView = () => {
   const { t } = useTranslation('payroll')
-  const { data: employees = [] } = useQuery({
-    queryKey: ['employees'],
-    queryFn: employeeService.getAll,
-    select: (data) => (data as unknown as import("@/types").Employee[]).filter(e => !e.isArchived)
+  const [page, setPage] = useState(1)
+  const perPage = 50
+
+  const { data: employeesList, isLoading: isEmpLoading } = useQuery({
+    queryKey: ['employees', 'active', page],
+    queryFn: () => employeeService.getActive(page, perPage)
   })
+
+  const employees = employeesList?.items || []
+
+  // Fetch transactions only for the currently visible employees
+  const employeeIds = useMemo(() => employees.map(e => e.id), [employees])
   const { data: transactions = [] } = useQuery({
-    queryKey: ['transactions'],
-    queryFn: () => transactionService.getAll()
+    queryKey: ['transactions', 'open', page], // key includes page so it refreshes on page change
+    queryFn: () => transactionService.getForEmployees(employeeIds),
+    enabled: employeeIds.length > 0
   })
+
+  // Fetch stats for the global totals (server-side calculation)
+  const { data: stats } = useQuery({
+    queryKey: ['payrollStats'],
+    queryFn: payrollService.getStats,
+    staleTime: 0
+  })
+
   const { departments: departmentConfig } = useDepartments()
 
   const [selectedEmp, setSelectedEmp] = useState<string | null>(null) // For Add Transaction Dialog
@@ -64,11 +77,12 @@ const PayrollRunView = () => {
   const queryClient = useQueryClient()
 
   const closeMonthMutation = useMutation({
-    mutationFn: () => payrollService.closeMonth(employees, transactions),
+    mutationFn: () => payrollService.closeMonth(),
     onSuccess: () => {
       queryClient.invalidateQueries({ queryKey: ['transactions'] })
       queryClient.invalidateQueries({ queryKey: ['payroll_runs'] })
       queryClient.invalidateQueries({ queryKey: ['lastClosedPayroll'] })
+      queryClient.invalidateQueries({ queryKey: ['payrollStats'] })
       toaster.create({ title: t('run.toast.monthClosed'), type: "success" })
     },
     onError: (error: Error) => {
@@ -81,19 +95,7 @@ const PayrollRunView = () => {
     closeMonthMutation.mutate()
   }
 
-  // Calculate global totals
-  const globalTotals = useMemo(() => {
-    return employees.reduce((acc, emp) => {
-      const empTx = transactions.filter(t => t.employeeId === emp.id)
-      const slip = payrollService.calculateSlip(emp, empTx)
-      return {
-        basic: acc.basic + slip.basicSalary,
-        net: acc.net + slip.netSalary
-      }
-    }, { basic: 0, net: 0 })
-  }, [employees, transactions])
-
-  // Grouping logic
+  // Grouping logic (for the current page)
   const groupedEmployees = useMemo(() => {
     const groups = new Map<string, import("@/types").Employee[]>()
 
@@ -115,18 +117,20 @@ const PayrollRunView = () => {
     return groups
   }, [employees, departmentConfig])
 
+  if (isEmpLoading) return <Center py="20"><Spinner /></Center>
+
   return (
     <Stack gap="6">
       <HStack justify="space-between" align="stretch">
         <HStack gap="4" flex="1">
-          {/* Summary Cards */}
+          {/* Summary Cards - Powered by Server Stats */}
           <Box p="4" borderWidth="1px" borderRadius="xl" bg="white" flex="1">
             <HStack gap="3" color="gray.500" mb="2">
               <Icon as={LuDollarSign} boxSize="5" />
               <Text fontSize="sm" fontWeight="medium" textTransform="uppercase">{t('run.globalTotalBasic', { defaultValue: 'Total Basic Payroll' })}</Text>
             </HStack>
             <Text fontSize="3xl" fontWeight="bold" color="gray.800">
-              {formatCurrency(globalTotals.basic)}
+              {formatCurrency(stats?.currentGross || 0)}
             </Text>
           </Box>
           <Box p="4" borderWidth="1px" borderRadius="xl" bg="white" flex="1">
@@ -135,7 +139,7 @@ const PayrollRunView = () => {
               <Text fontSize="sm" fontWeight="medium" textTransform="uppercase">{t('run.globalTotalNet', { defaultValue: 'Total Net Payout' })}</Text>
             </HStack>
             <Text fontSize="3xl" fontWeight="bold" color="green.600">
-              {formatCurrency(globalTotals.net)}
+              {formatCurrency(stats?.currentNetTotal || 0)}
             </Text>
           </Box>
         </HStack>
@@ -174,11 +178,36 @@ const PayrollRunView = () => {
         )}
       </Stack>
 
+      {/* Pagination Controls */}
+      <HStack justify="center" pt="4">
+        <Button 
+            size="sm" 
+            variant="outline" 
+            disabled={page <= 1} 
+            onClick={() => setPage(p => p - 1)}
+        >
+            Previous
+        </Button>
+        <Text fontSize="sm">Page {page} of {employeesList?.totalPages || 1}</Text>
+        <Button 
+            size="sm" 
+            variant="outline" 
+            disabled={page >= (employeesList?.totalPages || 1)} 
+            onClick={() => setPage(p => p + 1)}
+        >
+            Next
+        </Button>
+      </HStack>
+
       <TransactionDrawer
         open={isTxDrawerOpen}
         onOpenChange={setIsTxDrawerOpen}
         employeeIds={selectedEmp ? [selectedEmp] : []}
-        onSuccess={() => { }}
+        onSuccess={() => {
+            // Invalidate stats and transactions
+            queryClient.invalidateQueries({ queryKey: ['payrollStats'] })
+            queryClient.invalidateQueries({ queryKey: ['transactions'] })
+        }}
       />
     </Stack>
   )
@@ -188,10 +217,20 @@ const PayrollHistoryView = () => {
   const { t } = useTranslation('payroll')
   const { departments: departmentConfig } = useDepartments()
   const [selectedRunId, setSelectedRunId] = useState<string | null>(null)
+  const [page, setPage] = useState(1)
 
-  const { data: history = [], isLoading } = useQuery({
-    queryKey: ['payroll_runs'],
-    queryFn: payrollService.getHistory
+  const { data: runList, isLoading } = useQuery({
+    queryKey: ['payroll_runs', page],
+    queryFn: () => payrollService.getRuns(page, 10)
+  })
+
+  const history = runList?.items || []
+
+  // Fetch slips only when a run is selected
+  const { data: runSlips = [], isLoading: isLoadingSlips } = useQuery({
+    queryKey: ['run_slips', selectedRunId],
+    queryFn: () => selectedRunId ? payrollService.getRunSlips(selectedRunId) : Promise.resolve([]),
+    enabled: !!selectedRunId
   })
 
   const selectedRun = useMemo(() =>
@@ -202,12 +241,16 @@ const PayrollHistoryView = () => {
   if (isLoading) return <Text color="gray.500">{t('history.loading')}</Text>
 
   if (selectedRunId && selectedRun) {
+    if (isLoadingSlips) {
+      return <Center py="10"><Spinner /></Center>
+    }
+
     // Group historical slips by department
     const groupedSlips = new Map<string, PayrollSlip[]>()
     departmentConfig.forEach(d => groupedSlips.set(d.id, []))
     groupedSlips.set('other', [])
 
-    selectedRun.slips.forEach(slip => {
+    runSlips.forEach(slip => {
       const parent = departmentConfig.find(p => p.id === slip.departmentId || p.subDepartments.some(sub => sub.id === slip.departmentId))
       const groupId = parent ? parent.id : 'other'
       if (groupedSlips.has(groupId)) {
@@ -227,7 +270,7 @@ const PayrollHistoryView = () => {
             <Box textAlign="right">
               <Text fontSize="xs" color="gray.500" textTransform="uppercase">{t('history.totalPayout')}</Text>
               <Text fontSize="lg" fontWeight="bold" color="green.600">
-                {formatCurrency(selectedRun.slips.reduce((acc, s) => acc + s.netSalary, 0))}
+                {formatCurrency(selectedRun.totalNet || 0)}
               </Text>
             </Box>
           </HStack>
@@ -268,6 +311,27 @@ const PayrollHistoryView = () => {
               onClick={() => setSelectedRunId(run.id)}
             />
           ))}
+          
+          {/* Simple Pagination Controls */}
+          <HStack justify="center" mt="4">
+            <Button 
+                size="sm" 
+                variant="outline" 
+                disabled={page <= 1} 
+                onClick={() => setPage(p => p - 1)}
+            >
+                Previous
+            </Button>
+            <Text fontSize="sm">Page {page} of {runList?.totalPages || 1}</Text>
+            <Button 
+                size="sm" 
+                variant="outline" 
+                disabled={page >= (runList?.totalPages || 1)} 
+                onClick={() => setPage(p => p + 1)}
+            >
+                Next
+            </Button>
+          </HStack>
         </Stack>
       )}
     </Box>
@@ -276,18 +340,15 @@ const PayrollHistoryView = () => {
 
 const HistoryRunCard = ({ run, onClick }: { run: PayrollRun; onClick: () => void }) => {
   const { t } = useTranslation('payroll')
-  const printRef = useRef<HTMLDivElement>(null)
 
-  const handlePrint = useReactToPrint({
-    contentRef: printRef,
-    documentTitle: `Payslips_${run.period}`,
-  })
+  // We need slips for printing, but we don't have them in the list view.
+  // Strategy: Fetch slips on print click if not available? 
+  // For now, we disable printing from list view or fetch them on demand.
+  // Actually, let's just remove the hidden print template from list view to avoid eager fetching.
+  // Printing should happen in the detailed view.
 
-  const totals = run.slips.reduce<{ basic: number; net: number }>((acc, s) => ({
-    basic: acc.basic + s.basicSalary,
-    net: acc.net + s.netSalary
-  }), { basic: 0, net: 0 })
-
+  // Note: run.totalBasic and run.totalNet should be populated by PocketBase metadata.
+  
   return (
     <Box
       p="4"
@@ -300,11 +361,6 @@ const HistoryRunCard = ({ run, onClick }: { run: PayrollRun; onClick: () => void
       transition="all 0.2s"
       position="relative"
     >
-      {/* Hidden Print Template */}
-      <Box display="none">
-        <PayslipsPrintTemplate ref={printRef} slips={run.slips} period={run.period} />
-      </Box>
-
       <HStack justify="space-between" mb="4">
         <Box>
           <HStack gap="2">
@@ -315,28 +371,21 @@ const HistoryRunCard = ({ run, onClick }: { run: PayrollRun; onClick: () => void
         </Box>
         <HStack>
           <Badge colorPalette="green" variant="subtle" borderRadius="full">{t('history.closed')}</Badge>
-          <Button
-            size="sm"
-            variant="ghost"
-            onClick={(e) => { e.stopPropagation(); handlePrint(); }}
-          >
-            <LuPrinter /> {t('history.printPayslips', { defaultValue: 'Print Payslips' })}
-          </Button>
         </HStack>
       </HStack>
 
       <HStack gap="8">
         <Box>
           <Text fontSize="xs" color="gray.500" textTransform="uppercase" mb="1">{t('run.totalBasic')}</Text>
-          <Text fontWeight="bold" fontSize="md" color="gray.700">{formatCurrency(totals.basic)}</Text>
+          <Text fontWeight="bold" fontSize="md" color="gray.700">{formatCurrency(run.totalBasic || 0)}</Text>
         </Box>
         <Box>
           <Text fontSize="xs" color="gray.500" textTransform="uppercase" mb="1">{t('run.totalNet')}</Text>
-          <Text fontWeight="bold" fontSize="md" color="green.600">{formatCurrency(totals.net)}</Text>
+          <Text fontWeight="bold" fontSize="md" color="green.600">{formatCurrency(run.totalNet || 0)}</Text>
         </Box>
         <Box>
           <Text fontSize="xs" color="gray.500" textTransform="uppercase" mb="1">{t('run.employeesCount')}</Text>
-          <Text fontWeight="bold" fontSize="md" color="gray.700">{run.slips.length}</Text>
+          <Text fontWeight="bold" fontSize="md" color="gray.700">{run.employeeCount || 0}</Text>
         </Box>
       </HStack>
     </Box>
