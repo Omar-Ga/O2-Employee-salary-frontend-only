@@ -4,9 +4,11 @@ import { employeeService } from "@/services/employee.service"
 import { useQuery, useMutation, useQueryClient } from "@tanstack/react-query"
 import { payrollService } from "@/services/payroll.service"
 import { transactionService } from "@/services/transaction.service"
-import { LuWallet, LuHistory, LuCheck, LuTrendingUp, LuDollarSign } from "react-icons/lu"
+import { LuWallet, LuHistory, LuCheck, LuTrendingUp, LuDollarSign, LuPrinter } from "react-icons/lu"
 import { formatCurrency } from "@/lib/utils"
-import { useState, useMemo } from "react"
+import { useState, useMemo, useRef } from "react"
+import { useReactToPrint } from "react-to-print"
+import { PayslipsPrintTemplate } from "@/components/payroll/PayslipsPrintTemplate"
 import { toaster } from "@/components/ui/toaster"
 import { TransactionDrawer } from "@/components/transactions/TransactionDrawer"
 import { useDepartments } from "@/hooks/useDepartments"
@@ -219,6 +221,13 @@ const PayrollHistoryView = () => {
   const [selectedRunId, setSelectedRunId] = useState<string | null>(null)
   const [page, setPage] = useState(1)
 
+  // Print ref and handler — wired to the hidden PayslipsPrintTemplate
+  const printRef = useRef<HTMLDivElement>(null)
+  const handlePrint = useReactToPrint({
+    contentRef: printRef,
+    documentTitle: selectedRunId ? `Payslips-${selectedRunId}` : 'Payslips',
+  })
+
   const { data: runList, isLoading } = useQuery({
     queryKey: ['payroll_runs', page],
     queryFn: () => payrollService.getRuns(page, 10)
@@ -273,8 +282,26 @@ const PayrollHistoryView = () => {
                 {formatCurrency(selectedRun.totalNet || 0)}
               </Text>
             </Box>
+            <Button
+              colorPalette="oxygen"
+              variant="outline"
+              size="sm"
+              onClick={() => handlePrint()}
+              disabled={runSlips.length === 0}
+              loading={isLoadingSlips}
+            >
+              <Icon as={LuPrinter} mr="1" />
+              {t('history.printPayslips')}
+            </Button>
           </HStack>
         </HStack>
+
+        {/* Hidden print template — display:none on screen, cloned into iframe by react-to-print */}
+        <PayslipsPrintTemplate
+          ref={printRef}
+          slips={runSlips}
+          period={selectedRun.period}
+        />
 
         <Stack gap="4">
           {departmentConfig.map(parent => {

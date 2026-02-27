@@ -83,4 +83,4 @@ trigger: always_on
 
 ## 9. pocketbase changes flow
 
-- **restart pocketbase after any edits to the db, schema or migration files** always restart pb dashboard through pocketbase.exe serve this is because pocketbase loads new migrations on startup this way you can add any new migrations AND be able to see if a migration has errors. NEVER TRY PUSHING THE MIGRATION MANUALLY ON AN ALREADY RUNNING POCKETBASE.
+- **restart pocketbase after any edits to the db, schema or migration files** always restart pb dashboard through pocketbase.exe serve this is because pocketbase loads new migrations on startup this way you can add any new migrations AND be able to see if a migration has errors. NEVER TRY PUSHING THE MIGRATION MANUALLY ON AN ALREADY RUNNING POCKETBASE, if pocketbase seems to already be running then kill the process first then restart.

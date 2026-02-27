@@ -28,7 +28,8 @@
     "empty": "No payroll history yet.",
     "closed": "Closed",
     "totalPayout": "Total Payout",
-    "loading": "Loading history..."
+    "loading": "Loading history...",
+    "printPayslips": "Print Payslips"
   },
   "dialog": {
     "title": "Add Transaction for {{name}}",
@@ -103,6 +104,7 @@
     "totalAdditions": "Total Additions",
     "totalDeductions": "Total Deductions",
     "employeeSignature": "Employee Signature",
-    "managerSignature": "Manager Signature"
+    "managerSignature": "Manager Signature",
+    "printDate": "Print Date"
   }
 }

@@ -17,6 +17,7 @@ export const PayslipsPrintTemplate = forwardRef<HTMLDivElement, PayslipsPrintTem
 
         // Date formatting
         const formattedPeriod = period ? DateTime.fromFormat(period, 'yyyy-MM').setLocale(i18n.language).toFormat('MMMM yyyy') : period
+        const printDate = DateTime.now().setLocale(i18n.language).toFormat('yyyy-MM-dd HH:mm')
 
         return (
             <Box
@@ -95,6 +96,10 @@ export const PayslipsPrintTemplate = forwardRef<HTMLDivElement, PayslipsPrintTem
                                             <Box textAlign="end">
                                                 <Text fontSize="sm" color="gray.500" textTransform="uppercase" lineHeight="1">{t('payslip.period', { defaultValue: 'Period' })}</Text>
                                                 <Text fontSize="sm" fontWeight="bold" color="gray.800">{formattedPeriod}</Text>
+                                                <HStack gap="1" justify="flex-end" mt="1">
+                                                    <Text fontSize="9px" color="gray.400" textTransform="uppercase">{t('payslip.printDate', { defaultValue: 'Print Date' })}:</Text>
+                                                    <Text fontSize="9px" color="gray.500" fontWeight="medium">{printDate}</Text>
+                                                </HStack>
                                             </Box>
                                         </HStack>
 
@@ -171,35 +176,7 @@ export const PayslipsPrintTemplate = forwardRef<HTMLDivElement, PayslipsPrintTem
                                                 <Box borderBottom="1px solid" borderColor="gray.800" w="120px"></Box>
                                             </Box>
 
-                                            {/* Stamp area */}
-                                            <Box position="relative" w="120px" h="60px" display="flex" alignItems="flex-end">
-                                                <Box
-                                                    position="absolute"
-                                                    bottom="0px"
-                                                    left={isRTL ? "0" : "auto"}
-                                                    right={!isRTL ? "0" : "auto"}
-                                                    w="80px"
-                                                    h="80px"
-                                                    border="3px double"
-                                                    borderColor="blue.400"
-                                                    borderRadius="full"
-                                                    opacity={0.4}
-                                                    transform="rotate(-15deg)"
-                                                    display="flex"
-                                                    alignItems="center"
-                                                    justifyContent="center"
-                                                    pointerEvents="none"
-                                                >
-                                                    <VStack gap="0">
-                                                        <Text fontSize="10px" color="blue.500" fontWeight="black" textAlign="center" lineHeight="1">
-                                                            SKYCOURT
-                                                        </Text>
-                                                        <Text fontSize="8px" color="blue.500" fontWeight="bold">
-                                                            OFFICIAL STAMP
-                                                        </Text>
-                                                    </VStack>
-                                                </Box>
-                                            </Box>
+                                            <Box w="120px" h="60px" />
                                         </HStack>
                                     </Box>
                                 )
