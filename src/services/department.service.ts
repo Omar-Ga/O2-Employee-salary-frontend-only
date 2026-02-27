@@ -5,9 +5,20 @@ import { ClientResponseError } from 'pocketbase'
 
 const handleError = (error: unknown) => {
     if (error instanceof ClientResponseError) {
+        console.error("PocketBase Detailed Error Response:", error.response);
         if (error.status === 400 && error.message.includes('auth')) {
             throw new Error("Authentication failed or token expired. Please log in again.");
         }
+
+        if (error.status === 400 && error.response?.data) {
+            const validationErrors = Object.entries(error.response.data)
+                .map(([field, err]: [string, any]) => `${field}: ${err.message}`)
+                .join(', ');
+            if (validationErrors) {
+                throw new Error(`Validation Error: ${validationErrors}`);
+            }
+        }
+
         throw new Error(error.message || "A database error occurred.");
     }
     if (error instanceof Error) {
