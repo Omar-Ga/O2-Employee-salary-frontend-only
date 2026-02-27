@@ -9,7 +9,8 @@ import { toaster } from "@/components/ui/toaster"
 import { useDepartments } from "@/hooks/useDepartments"
 import type { DepartmentConfig } from "@/lib/departments"
 import { Field } from "@/components/ui/field"
-import type { EmployeesRecord, EmployeeScores } from "@/types/pocketbase-types"
+import type { EmployeesRecord } from "@/types/pocketbase-types"
+import type { EmployeeScores } from "@/types"
 import { EmployeesGradeOptions } from "@/types/pocketbase-types"
 
 type EmployeeFormData = Pick<EmployeesRecord,

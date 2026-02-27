@@ -6,8 +6,13 @@ import {
   PayrollSlipsResponse,
   UsersResponse,
   UsersRecord,
-  EmployeeScores,
 } from './pocketbase-types'
+
+export type EmployeeScores = {
+  performance: number
+  dedication: number
+  responsibility: number
+}
 
 export type {
   EmployeesResponse,
@@ -17,7 +22,6 @@ export type {
   PayrollSlipsResponse,
   UsersResponse,
   UsersRecord,
-  EmployeeScores,
 }
 
 export type Employee = EmployeesResponse<EmployeeScores>
