@@ -11,7 +11,8 @@
     "expandAll": "توسيع الكل",
     "collapseAll": "طي الكل",
     "addDepartment": "إضافة قسم",
-    "addSubdepartment": "إضافة قسم فرعي"
+    "addSubdepartment": "إضافة قسم فرعي",
+    "delete": "حذف"
   },
   "deleteDialog": {
     "title": "حذف القسم",

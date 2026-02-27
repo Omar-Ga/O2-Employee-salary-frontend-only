@@ -1,6 +1,6 @@
 import { Box, Text, Icon, IconButton, Flex, Input } from "@chakra-ui/react"
 import { useTranslation } from "react-i18next"
-import { LuChevronDown, LuChevronRight } from "react-icons/lu"
+import { LuChevronDown, LuChevronRight, LuTrash2 } from "react-icons/lu"
 import { NodeRendererProps } from "react-arborist"
 import { DepartmentNode } from "./types"
 import { useRef, useEffect } from "react"
@@ -123,6 +123,23 @@ export const DepartmentItem = ({
               <Icon as={node.isOpen ? LuChevronDown : LuChevronRight} boxSize={4} />
             </IconButton>
           )}
+          {/* Delete Action */}
+          <IconButton
+            variant="ghost"
+            size="xs"
+            aria-label={t('actions.delete')}
+            onClick={(e) => {
+              e.stopPropagation()
+              node.tree.delete(node.id)
+            }}
+            color="gray.400"
+            _hover={{ bg: "red.50", color: "red.500" }}
+            minW="auto"
+            h="auto"
+            p={0.5}
+          >
+            <Icon as={LuTrash2} boxSize={4} />
+          </IconButton>
         </Flex>
       </Flex>
     </Box>

@@ -11,7 +11,8 @@
     "expandAll": "Expand All",
     "collapseAll": "Collapse All",
     "addDepartment": "Add Department",
-    "addSubdepartment": "Add Subdepartment"
+    "addSubdepartment": "Add Subdepartment",
+    "delete": "Delete"
   },
   "deleteDialog": {
     "title": "Delete Department",
