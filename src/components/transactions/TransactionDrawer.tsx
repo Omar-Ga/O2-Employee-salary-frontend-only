@@ -40,7 +40,7 @@ import {
 } from "react-icons/lu"
 import { TransactionCategory, Transaction } from "@/types"
 import { TransactionsCategoryOptions } from "@/types/pocketbase-types"
-import { formatCurrency } from "@/lib/utils"
+import { formatCurrency, getCurrencySymbol } from "@/lib/utils"
 import { SegmentGroup, IconButton } from "@chakra-ui/react"
 import type { IconType } from "react-icons"
 
@@ -405,7 +405,7 @@ export const TransactionDrawer = ({ open, onOpenChange, employeeIds, onSuccess }
                         _focus={{ borderColor: "oxygen.500", ring: "2px", ringColor: "oxygen.100" }}
                       />
                       <Box position="absolute" left="4" top="50%" transform="translateY(-50%)" color="gray.400">
-                        {['bonus', 'advance'].includes(activeCategory) ? <Text fontWeight="bold">$</Text> : <Icon as={staged[activeCategory as 'overtime' | 'deduction'].unit === 'hours' ? LuClock : LuCalendar} />}
+                        {['bonus', 'advance'].includes(activeCategory) ? <Text fontWeight="bold">{getCurrencySymbol()}</Text> : <Icon as={staged[activeCategory as 'overtime' | 'deduction'].unit === 'hours' ? LuClock : LuCalendar} />}
                       </Box>
                     </Box>
                   </Stack>

@@ -1,9 +1,19 @@
+import i18next from 'i18next';
+
 export const formatCurrency = (amount: number) => {
-  return new Intl.NumberFormat('en-US', {
+  const locale = i18next.language === 'ar' ? 'ar-EG' : 'en-EG';
+  return new Intl.NumberFormat(locale, {
     style: 'currency',
-    currency: 'USD', // The image shows $, Plan says EGP. I'll stick to USD for the "International" look but maybe EGP if strictly following plan. Plan says "1000 EGP" example. Image says "$6,250". Image takes precedence for "inspiration". I'll use $ but maybe EGP in Arabic?
-    // Let's use $ as per image.
+    currency: 'EGP',
     minimumFractionDigits: 0,
     maximumFractionDigits: 0,
   }).format(amount)
+}
+
+export const getCurrencySymbol = () => {
+  const locale = i18next.language === 'ar' ? 'ar-EG' : 'en-EG';
+  return new Intl.NumberFormat(locale, {
+    style: 'currency',
+    currency: 'EGP',
+  }).formatToParts(0).find(p => p.type === 'currency')?.value || 'EGP';
 }

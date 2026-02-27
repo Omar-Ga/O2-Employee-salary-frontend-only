@@ -4,7 +4,7 @@ import { employeeService } from "@/services/employee.service"
 import { useQuery, useMutation, useQueryClient } from "@tanstack/react-query"
 import { payrollService } from "@/services/payroll.service"
 import { transactionService } from "@/services/transaction.service"
-import { LuWallet, LuHistory, LuCheck, LuTrendingUp, LuDollarSign, LuPrinter } from "react-icons/lu"
+import { LuWallet, LuHistory, LuCheck, LuTrendingUp, LuBanknote, LuPrinter } from "react-icons/lu"
 import { formatCurrency } from "@/lib/utils"
 import { useState, useMemo, useRef } from "react"
 import { useReactToPrint } from "react-to-print"
@@ -128,7 +128,7 @@ const PayrollRunView = () => {
           {/* Summary Cards - Powered by Server Stats */}
           <Box p="4" borderWidth="1px" borderRadius="xl" bg="white" flex="1">
             <HStack gap="3" color="gray.500" mb="2">
-              <Icon as={LuDollarSign} boxSize="5" />
+              <Icon as={LuBanknote} boxSize="5" />
               <Text fontSize="sm" fontWeight="medium" textTransform="uppercase">{t('run.globalTotalBasic', { defaultValue: 'Total Basic Payroll' })}</Text>
             </HStack>
             <Text fontSize="3xl" fontWeight="bold" color="gray.800">
@@ -182,22 +182,22 @@ const PayrollRunView = () => {
 
       {/* Pagination Controls */}
       <HStack justify="center" pt="4">
-        <Button 
-            size="sm" 
-            variant="outline" 
-            disabled={page <= 1} 
-            onClick={() => setPage(p => p - 1)}
+        <Button
+          size="sm"
+          variant="outline"
+          disabled={page <= 1}
+          onClick={() => setPage(p => p - 1)}
         >
-            Previous
+          Previous
         </Button>
         <Text fontSize="sm">Page {page} of {employeesList?.totalPages || 1}</Text>
-        <Button 
-            size="sm" 
-            variant="outline" 
-            disabled={page >= (employeesList?.totalPages || 1)} 
-            onClick={() => setPage(p => p + 1)}
+        <Button
+          size="sm"
+          variant="outline"
+          disabled={page >= (employeesList?.totalPages || 1)}
+          onClick={() => setPage(p => p + 1)}
         >
-            Next
+          Next
         </Button>
       </HStack>
 
@@ -206,9 +206,9 @@ const PayrollRunView = () => {
         onOpenChange={setIsTxDrawerOpen}
         employeeIds={selectedEmp ? [selectedEmp] : []}
         onSuccess={() => {
-            // Invalidate stats and transactions
-            queryClient.invalidateQueries({ queryKey: ['payrollStats'] })
-            queryClient.invalidateQueries({ queryKey: ['transactions'] })
+          // Invalidate stats and transactions
+          queryClient.invalidateQueries({ queryKey: ['payrollStats'] })
+          queryClient.invalidateQueries({ queryKey: ['transactions'] })
         }}
       />
     </Stack>
@@ -338,25 +338,25 @@ const PayrollHistoryView = () => {
               onClick={() => setSelectedRunId(run.id)}
             />
           ))}
-          
+
           {/* Simple Pagination Controls */}
           <HStack justify="center" mt="4">
-            <Button 
-                size="sm" 
-                variant="outline" 
-                disabled={page <= 1} 
-                onClick={() => setPage(p => p - 1)}
+            <Button
+              size="sm"
+              variant="outline"
+              disabled={page <= 1}
+              onClick={() => setPage(p => p - 1)}
             >
-                Previous
+              Previous
             </Button>
             <Text fontSize="sm">Page {page} of {runList?.totalPages || 1}</Text>
-            <Button 
-                size="sm" 
-                variant="outline" 
-                disabled={page >= (runList?.totalPages || 1)} 
-                onClick={() => setPage(p => p + 1)}
+            <Button
+              size="sm"
+              variant="outline"
+              disabled={page >= (runList?.totalPages || 1)}
+              onClick={() => setPage(p => p + 1)}
             >
-                Next
+              Next
             </Button>
           </HStack>
         </Stack>
@@ -375,7 +375,7 @@ const HistoryRunCard = ({ run, onClick }: { run: PayrollRun; onClick: () => void
   // Printing should happen in the detailed view.
 
   // Note: run.totalBasic and run.totalNet should be populated by PocketBase metadata.
-  
+
   return (
     <Box
       p="4"
