@@ -23,6 +23,14 @@ export const employeeService = {
     })
   },
 
+  getAllActive: async (): Promise<Employee[]> => {
+    return await pb.collection(Collections.Employees).getFullList({
+      sort: '-created',
+      expand: 'department',
+      filter: 'isArchived = false'
+    })
+  },
+
   create: async (data: Partial<EmployeesRecord>): Promise<Employee> => {
     return await pb.collection(Collections.Employees).create(data)
   },

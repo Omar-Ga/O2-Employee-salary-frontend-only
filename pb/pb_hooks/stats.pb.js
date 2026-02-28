@@ -3,7 +3,7 @@
 
 routerAdd("GET", "/api/payroll/stats", (c) => {
     const app = $app;
-    
+
     // --- Helper: Convert transaction unit to cash (reused logic) ---
     const toCash = (t, employee) => {
         const monthlySalary = employee.getFloat("monthlySalary");
@@ -11,7 +11,7 @@ routerAdd("GET", "/api/payroll/stats", (c) => {
         // Avoid division by zero
         const hourlyRate = workHours > 0 ? monthlySalary / workHours : 0;
         const dailyRate = monthlySalary / 30;
-        
+
         const unit = t.getString("unit");
         const amount = t.getFloat("amount");
 
@@ -26,7 +26,7 @@ routerAdd("GET", "/api/payroll/stats", (c) => {
         "employees",
         "isArchived = false",
         "-created",
-        10000, 
+        10000,
         0
     );
     const activeCount = employees.length;
@@ -36,7 +36,7 @@ routerAdd("GET", "/api/payroll/stats", (c) => {
         "transactions",
         "isClosed = false",
         "-created",
-        10000, 
+        10000,
         0
     );
 
@@ -108,24 +108,14 @@ routerAdd("GET", "/api/payroll/stats", (c) => {
             const lastRun = lastRuns[0];
             lastRunId = lastRun.id;
             lastPeriod = lastRun.getString("period");
-            
-            // Fetch all slips for this run to aggregate totals
-            // Assuming max 10k slips per run. If more, we need pagination or SQL query.
-            const slips = app.findRecordsByFilter(
-                "payroll_slips",
-                "payrollRunId = '" + lastRunId + "'",
-                "-created",
-                10000, 
-                0
-            );
 
-            for (let i = 0; i < slips.length; i++) {
-                const s = slips[i];
-                lastRunTotal += s.getFloat("netSalary");
-                // deductionAmount and advanceAmount might be null/undefined? getFloat returns 0 if missing.
-                lastRunDeductionTotal += (s.getFloat("deductionAmount") + s.getFloat("advanceAmount"));
-                lastRunGrossTotal += s.getFloat("basicSalary");
-            }
+            // OPTIMIZED: Use pre-calculated totals from the run record
+            lastRunTotal = lastRun.getFloat("totalNet");
+            lastRunDeductionTotal = lastRun.getFloat("totalDeductions");
+            lastRunGrossTotal = lastRun.getFloat("totalBasic");
+
+            // If the record is older and doesn't have these fields yet, we fall back to 0
+            // but for new runs, this is O(1) instead of O(N)
         }
     } catch (e) {
         // Ignore errors, return 0s
@@ -135,7 +125,7 @@ routerAdd("GET", "/api/payroll/stats", (c) => {
     const currentDeductionRate = currentGross > 0 ? (currentDeductionTotal / currentGross) * 100 : 0;
     const lastDeductionRate = lastRunGrossTotal > 0 ? (lastRunDeductionTotal / lastRunGrossTotal) * 100 : 0;
     const deductionRateChange = lastRunId ? (currentDeductionRate - lastDeductionRate) : null;
-    
+
     // Percent Change in Net Total
     const percentChange = lastRunTotal > 0 ? ((currentNetTotal - lastRunTotal) / lastRunTotal) * 100 : null;
 
@@ -145,10 +135,10 @@ routerAdd("GET", "/api/payroll/stats", (c) => {
         currentDeductionTotal,
         currentGross,
         currentDeductionRate,
-        
+
         lastRunTotal,
         lastPeriod,
-        
+
         percentChange,
         deductionRateChange
     });

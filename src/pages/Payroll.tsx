@@ -47,20 +47,18 @@ export const Payroll = () => {
 
 const PayrollRunView = () => {
   const { t } = useTranslation('payroll')
-  const [page, setPage] = useState(1)
-  const perPage = 50
-
-  const { data: employeesList, isLoading: isEmpLoading } = useQuery({
-    queryKey: ['employees', 'active', page],
-    queryFn: () => employeeService.getActive(page, perPage)
+  const { data: employeesData, isLoading: isEmpLoading } = useQuery({
+    queryKey: ['employees', 'active', 'all'],
+    queryFn: () => employeeService.getAllActive()
   })
 
-  const employees = employeesList?.items || []
+  // We fetch all active employees to accurately group and sum totals for the current run
+  const employees = employeesData || []
 
   // Fetch transactions only for the currently visible employees
   const employeeIds = useMemo(() => employees.map(e => e.id), [employees])
   const { data: transactions = [] } = useQuery({
-    queryKey: ['transactions', 'open', page], // key includes page so it refreshes on page change
+    queryKey: ['transactions', 'open'],
     queryFn: () => transactionService.getForEmployees(employeeIds),
     enabled: employeeIds.length > 0
   })
@@ -180,26 +178,7 @@ const PayrollRunView = () => {
         )}
       </Stack>
 
-      {/* Pagination Controls */}
-      <HStack justify="center" pt="4">
-        <Button
-          size="sm"
-          variant="outline"
-          disabled={page <= 1}
-          onClick={() => setPage(p => p - 1)}
-        >
-          Previous
-        </Button>
-        <Text fontSize="sm">Page {page} of {employeesList?.totalPages || 1}</Text>
-        <Button
-          size="sm"
-          variant="outline"
-          disabled={page >= (employeesList?.totalPages || 1)}
-          onClick={() => setPage(p => p + 1)}
-        >
-          Next
-        </Button>
-      </HStack>
+      {/* No pagination controls — we fetch all active employees for accurate totals */}
 
       <TransactionDrawer
         open={isTxDrawerOpen}
