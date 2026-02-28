@@ -9,6 +9,7 @@ import { formatCurrency } from "@/lib/utils"
 import { useState, useMemo, useRef } from "react"
 import { useReactToPrint } from "react-to-print"
 import { PayslipsPrintTemplate } from "@/components/payroll/PayslipsPrintTemplate"
+import { PayrollReportPrintTemplate } from "@/components/payroll/PayrollReportPrintTemplate"
 import { toaster } from "@/components/ui/toaster"
 import { TransactionDrawer } from "@/components/transactions/TransactionDrawer"
 import { useDepartments } from "@/hooks/useDepartments"
@@ -201,10 +202,17 @@ const PayrollHistoryView = () => {
   const [page, setPage] = useState(1)
 
   // Print ref and handler — wired to the hidden PayslipsPrintTemplate
-  const printRef = useRef<HTMLDivElement>(null)
-  const handlePrint = useReactToPrint({
-    contentRef: printRef,
+  const printPayslipsRef = useRef<HTMLDivElement>(null)
+  const handlePrintPayslips = useReactToPrint({
+    contentRef: printPayslipsRef,
     documentTitle: selectedRunId ? `Payslips-${selectedRunId}` : 'Payslips',
+  })
+
+  // Print ref and handler — wired to the hidden PayrollReportPrintTemplate
+  const printReportRef = useRef<HTMLDivElement>(null)
+  const handlePrintReport = useReactToPrint({
+    contentRef: printReportRef,
+    documentTitle: selectedRunId ? `Payroll-Report-${selectedRunId}` : 'Payroll-Report',
   })
 
   const { data: runList, isLoading } = useQuery({
@@ -262,10 +270,21 @@ const PayrollHistoryView = () => {
               </Text>
             </Box>
             <Button
+              colorPalette="gray"
+              variant="outline"
+              size="sm"
+              onClick={() => handlePrintReport()}
+              disabled={runSlips.length === 0}
+              loading={isLoadingSlips}
+            >
+              <Icon as={LuPrinter} mr="1" />
+              {t('history.printReport', { defaultValue: 'Print Report' })}
+            </Button>
+            <Button
               colorPalette="oxygen"
               variant="outline"
               size="sm"
-              onClick={() => handlePrint()}
+              onClick={() => handlePrintPayslips()}
               disabled={runSlips.length === 0}
               loading={isLoadingSlips}
             >
@@ -275,11 +294,17 @@ const PayrollHistoryView = () => {
           </HStack>
         </HStack>
 
-        {/* Hidden print template — display:none on screen, cloned into iframe by react-to-print */}
+        {/* Hidden print templates — display:none on screen, cloned into iframe by react-to-print */}
         <PayslipsPrintTemplate
-          ref={printRef}
+          ref={printPayslipsRef}
           slips={runSlips}
           period={selectedRun.period}
+        />
+        <PayrollReportPrintTemplate
+          ref={printReportRef}
+          slips={runSlips}
+          period={selectedRun.period}
+          departmentConfig={departmentConfig}
         />
 
         <Stack gap="4">

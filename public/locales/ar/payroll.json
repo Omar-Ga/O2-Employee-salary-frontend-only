@@ -106,5 +106,19 @@
     "employeeSignature": "توقيع الموظف",
     "managerSignature": "توقيع المدير",
     "printDate": "تاريخ الطباعة"
+  },
+  "report": {
+    "title": "تقرير الرواتب",
+    "employeeName": "الاسم",
+    "jobTitle": "الوظيفة",
+    "additions": "الاضافي / حافز",
+    "deductions": "الخصم",
+    "loans": "سلف",
+    "grossSalary": "اجمالي الراتب",
+    "netSalary": "الصافي",
+    "signature": "التوقيع",
+    "subtotal": "الاجمالي الفرعي",
+    "parentTotal": "اجمالي الادارة",
+    "grandTotal": "الاجمالي العام"
   }
 }

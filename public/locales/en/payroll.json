@@ -106,5 +106,19 @@
     "employeeSignature": "Employee Signature",
     "managerSignature": "Manager Signature",
     "printDate": "Print Date"
+  },
+  "report": {
+    "title": "Payroll Report",
+    "employeeName": "Name",
+    "jobTitle": "Job Title",
+    "additions": "Additions",
+    "deductions": "Deductions",
+    "loans": "Loans",
+    "grossSalary": "Gross Salary",
+    "netSalary": "Net Salary",
+    "signature": "Signature",
+    "subtotal": "Subtotal",
+    "parentTotal": "Department Total",
+    "grandTotal": "Grand Total"
   }
 }
