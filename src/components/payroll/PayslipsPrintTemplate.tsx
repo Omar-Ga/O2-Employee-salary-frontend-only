@@ -13,7 +13,7 @@ interface PayslipsPrintTemplateProps {
 export const PayslipsPrintTemplate = forwardRef<HTMLDivElement, PayslipsPrintTemplateProps>(
     ({ slips, period }, ref) => {
         const { t, i18n } = useTranslation('payroll')
-        const isRTL = i18n.language === 'ar'
+        const isRTL = i18n.dir() === 'rtl'
 
         // Date formatting
         const formattedPeriod = period ? DateTime.fromFormat(period, 'yyyy-MM').setLocale(i18n.language).toFormat('MMMM yyyy') : period
@@ -39,7 +39,7 @@ export const PayslipsPrintTemplate = forwardRef<HTMLDivElement, PayslipsPrintTem
                 <style type="text/css" media="print">
                     {`
             @page { size: A4 portrait; margin: 0; }
-            body { -webkit-print-color-adjust: exact; print-color-adjust: exact; }
+            body { -webkit-print-color-adjust: exact; print-color-adjust: exact; direction: ${isRTL ? 'rtl' : 'ltr'}; }
           `}
                 </style>
 

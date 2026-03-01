@@ -1,7 +1,7 @@
 import i18next from 'i18next';
 
 export const formatCurrency = (amount: number) => {
-  const locale = i18next.language === 'ar' ? 'ar-EG' : 'en-EG';
+  const locale = i18next.language.startsWith('ar') ? 'ar-EG' : 'en-EG';
   return new Intl.NumberFormat(locale, {
     style: 'currency',
     currency: 'EGP',
@@ -11,7 +11,7 @@ export const formatCurrency = (amount: number) => {
 }
 
 export const getCurrencySymbol = () => {
-  const locale = i18next.language === 'ar' ? 'ar-EG' : 'en-EG';
+  const locale = i18next.language.startsWith('ar') ? 'ar-EG' : 'en-EG';
   return new Intl.NumberFormat(locale, {
     style: 'currency',
     currency: 'EGP',

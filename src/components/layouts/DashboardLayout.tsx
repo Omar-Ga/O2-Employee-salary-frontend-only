@@ -7,7 +7,7 @@ import { useEffect } from "react"
 
 export const DashboardLayout = () => {
   const { i18n } = useTranslation()
-  const dir = i18n.language === 'ar' ? 'rtl' : 'ltr'
+  const dir = i18n.dir()
 
   useEffect(() => {
     document.documentElement.dir = dir

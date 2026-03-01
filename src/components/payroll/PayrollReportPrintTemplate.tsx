@@ -15,7 +15,7 @@ interface PayrollReportPrintTemplateProps {
 export const PayrollReportPrintTemplate = forwardRef<HTMLDivElement, PayrollReportPrintTemplateProps>(
     ({ slips, period, departmentConfig }, ref) => {
         const { t, i18n } = useTranslation('payroll')
-        const isRTL = i18n.language === 'ar'
+        const isRTL = i18n.dir() === 'rtl'
 
         // Date formatting
         const formattedPeriod = period ? DateTime.fromFormat(period, 'yyyy-MM').setLocale(i18n.language).toFormat('MMMM yyyy') : period
@@ -81,7 +81,7 @@ export const PayrollReportPrintTemplate = forwardRef<HTMLDivElement, PayrollRepo
                 <style type="text/css" media="print">
                     {`
             @page { size: A4 landscape; margin: 0; }
-            body { -webkit-print-color-adjust: exact; print-color-adjust: exact; font-family: sans-serif; }
+            body { -webkit-print-color-adjust: exact; print-color-adjust: exact; font-family: sans-serif; direction: ${isRTL ? 'rtl' : 'ltr'}; }
             .avoid-break { break-inside: avoid; }
             table { width: 100%; border-collapse: collapse; font-size: 10pt; }
             th, td { border: 1px solid #cbd5e0; padding: 4px 8px; text-align: ${isRTL ? 'right' : 'left'}; }
