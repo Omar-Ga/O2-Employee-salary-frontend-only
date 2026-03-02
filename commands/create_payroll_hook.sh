@@ -90,9 +90,8 @@ routerAdd("POST", "/api/payroll/close", (c) => {
     return c.json(200, { success: true, runId: runId });
 });
 
-routerAdd("POST", "/api/payroll/restore", (c) => {
-    const body = $apis.requestInfo(c).body;
-    const runId = body.runId;
+routerAdd("POST", "/api/payroll/restore", (e) => {
+    const runId = e.requestInfo().query["runId"];
     if (!runId) throw new BadRequestError("runId is required");
 
     const app = $app;
@@ -121,7 +120,7 @@ routerAdd("POST", "/api/payroll/restore", (c) => {
         txApp.delete(run);
     });
 
-    return c.json(200, { success: true });
+    return e.json(200, { success: true });
 });
 EOF
 
