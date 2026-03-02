@@ -151,8 +151,9 @@ routerAdd("POST", "/api/payroll/close", (c) => {
 
 routerAdd("POST", "/api/payroll/revert", (c) => {
     const app = $app;
-    const info = $apis.requestInfo(c);
-    const runId = info.body["runId"];
+    const data = {};
+    c.bindBody(data);
+    const runId = data["runId"];
 
     if (!runId) {
         return c.json(400, { message: "runId is required." });
