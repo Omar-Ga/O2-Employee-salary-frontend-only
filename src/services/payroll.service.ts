@@ -80,6 +80,7 @@ export const payrollService = {
   restoreRun: async (runId: string) => {
     return await pb.send('/api/payroll/restore', {
       method: 'POST',
+      headers: { 'Content-Type': 'application/json' },
       body: JSON.stringify({ runId }),
     })
   },
