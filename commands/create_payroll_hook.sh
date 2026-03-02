@@ -112,7 +112,7 @@ routerAdd("POST", "/api/payroll/restore", (e) => {
         slipCount = slips.length;
 
         for (let i = 0; i < slips.length; i++) {
-            const txIds = slips[i].get("transactions") || [];
+            const txIds = slips[i].getStringSlice("transactions") || [];
             for (let j = 0; j < txIds.length; j++) {
                 try {
                     const tx = txApp.findRecordById("transactions", txIds[j]);
