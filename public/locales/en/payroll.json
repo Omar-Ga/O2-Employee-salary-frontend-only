@@ -29,7 +29,19 @@
     "closed": "Closed",
     "totalPayout": "Total Payout",
     "loading": "Loading history...",
-    "printPayslips": "Print Payslips"
+    "printPayslips": "Print Payslips",
+    "printReport": "Print Report",
+    "revertClose": "Revert Close",
+    "revertDialog": {
+      "title": "Revert Payroll Run?",
+      "description": "This will permanently delete the payroll run for {{period}} and restore all associated transactions to an open state. This action cannot be undone.",
+      "confirm": "Yes, Revert",
+      "cancel": "Cancel"
+    },
+    "toast": {
+      "reverted": "Payroll run reverted successfully.",
+      "revertError": "Failed to revert payroll run."
+    }
   },
   "dialog": {
     "title": "Add Transaction for {{name}}",

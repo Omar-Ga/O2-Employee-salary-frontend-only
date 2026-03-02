@@ -1,4 +1,4 @@
-import { Box, Button, HStack, Heading, Badge, Text, Tabs, Stack, Icon, Spinner, Center } from "@chakra-ui/react"
+import { Box, Button, Dialog, HStack, Heading, Badge, Text, Tabs, Stack, Icon, Spinner, Center } from "@chakra-ui/react"
 import { useTranslation } from "react-i18next"
 import { employeeService } from "@/services/employee.service"
 import { useQuery, useMutation, useQueryClient } from "@tanstack/react-query"
@@ -200,6 +200,8 @@ const PayrollHistoryView = () => {
   const { departments: departmentConfig } = useDepartments()
   const [selectedRunId, setSelectedRunId] = useState<string | null>(null)
   const [page, setPage] = useState(1)
+  const [isRevertDialogOpen, setIsRevertDialogOpen] = useState(false)
+  const queryClient = useQueryClient()
 
   // Print ref and handler — wired to the hidden PayslipsPrintTemplate
   const printPayslipsRef = useRef<HTMLDivElement>(null)
@@ -233,6 +235,30 @@ const PayrollHistoryView = () => {
     history.find(r => r.id === selectedRunId),
     [history, selectedRunId]
   )
+
+  // Determine if the selected run is within the 5-day revert window
+  const isRevertEligible = useMemo(() => {
+    if (!selectedRun) return false
+    const diffMs = new Date().getTime() - new Date(selectedRun.created).getTime()
+    return diffMs <= 5 * 24 * 60 * 60 * 1000
+  }, [selectedRun])
+
+  const revertMutation = useMutation({
+    mutationFn: (runId: string) => payrollService.revertRun(runId),
+    onSuccess: () => {
+      queryClient.invalidateQueries({ queryKey: ['payrollStats'] })
+      queryClient.invalidateQueries({ queryKey: ['transactions'] })
+      queryClient.invalidateQueries({ queryKey: ['run_slips'] })
+      queryClient.invalidateQueries({ queryKey: ['payroll_runs'] })
+      setIsRevertDialogOpen(false)
+      setSelectedRunId(null)
+      toaster.create({ title: t('history.toast.reverted'), type: 'success' })
+    },
+    onError: (error: Error) => {
+      setIsRevertDialogOpen(false)
+      toaster.create({ title: t('history.toast.revertError'), description: error.message, type: 'error' })
+    },
+  })
 
   if (isLoading) return <Text color="gray.500">{t('history.loading')}</Text>
 
@@ -269,6 +295,48 @@ const PayrollHistoryView = () => {
                 {formatCurrency(selectedRun.totalNet || 0)}
               </Text>
             </Box>
+            {isRevertEligible && (
+              <>
+                <Button
+                  colorPalette="red"
+                  variant="outline"
+                  size="sm"
+                  onClick={() => setIsRevertDialogOpen(true)}
+                >
+                  {t('history.revertClose')}
+                </Button>
+
+                <Dialog.Root
+                  open={isRevertDialogOpen}
+                  onOpenChange={(e) => setIsRevertDialogOpen(e.open)}
+                  role="alertdialog"
+                >
+                  <Dialog.Backdrop />
+                  <Dialog.Positioner>
+                    <Dialog.Content>
+                      <Dialog.Header>
+                        <Dialog.Title>{t('history.revertDialog.title')}</Dialog.Title>
+                      </Dialog.Header>
+                      <Dialog.Body>
+                        <Text>{t('history.revertDialog.description', { period: selectedRun.period })}</Text>
+                      </Dialog.Body>
+                      <Dialog.Footer>
+                        <Button variant="outline" onClick={() => setIsRevertDialogOpen(false)}>
+                          {t('history.revertDialog.cancel')}
+                        </Button>
+                        <Button
+                          colorPalette="red"
+                          loading={revertMutation.isPending}
+                          onClick={() => revertMutation.mutate(selectedRunId!)}
+                        >
+                          {t('history.revertDialog.confirm')}
+                        </Button>
+                      </Dialog.Footer>
+                    </Dialog.Content>
+                  </Dialog.Positioner>
+                </Dialog.Root>
+              </>
+            )}
             <Button
               colorPalette="gray"
               variant="outline"
@@ -278,7 +346,7 @@ const PayrollHistoryView = () => {
               loading={isLoadingSlips}
             >
               <Icon as={LuPrinter} mr="1" />
-              {t('history.printReport', { defaultValue: 'Print Report' })}
+              {t('history.printReport')}
             </Button>
             <Button
               colorPalette="oxygen"

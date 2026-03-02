@@ -148,3 +148,69 @@ routerAdd("POST", "/api/payroll/close", (c) => {
 
     return c.json(200, { success: true, runId: runId });
 });
+
+routerAdd("POST", "/api/payroll/revert", (c) => {
+    const app = $app;
+    const info = $apis.requestInfo(c);
+    const runId = info.body["runId"];
+
+    if (!runId) {
+        return c.json(400, { message: "runId is required." });
+    }
+
+    // --- FETCH & VALIDATE RUN ---
+    let run;
+    try {
+        run = app.findRecordById("payroll_runs", runId);
+    } catch (e) {
+        return c.json(404, { message: "Payroll run not found." });
+    }
+
+    // Enforce 5-day revert window
+    const createdDate = new Date(run.getString("created"));
+    const now = new Date();
+    const diffDays = (now.getTime() - createdDate.getTime()) / (1000 * 60 * 60 * 24);
+    if (diffDays > 5) {
+        return c.json(400, { message: "This payroll run is older than 5 days and cannot be reverted." });
+    }
+
+    // --- ATOMIC REVERT ---
+    app.runInTransaction((txApp) => {
+        // Fetch all slips for this run (parameterized to avoid injection)
+        const slips = txApp.findRecordsByFilter(
+            "payroll_slips",
+            "payrollRunId = {:runId}",
+            "",
+            10000,
+            0,
+            { runId: runId }
+        );
+
+        // For each slip, reopen all linked transactions and delete the slip
+        for (let i = 0; i < slips.length; i++) {
+            const slip = slips[i];
+            if (!slip) continue;
+
+            // The 'transactions' field is a relation array of transaction IDs
+            const txIds = slip.get("transactions") || [];
+
+            for (let j = 0; j < txIds.length; j++) {
+                try {
+                    const tx = txApp.findRecordById("transactions", txIds[j]);
+                    if (!tx) continue;
+                    tx.set("isClosed", false);
+                    txApp.save(tx);
+                } catch (e) {
+                    // Transaction may have been manually deleted — skip safely
+                }
+            }
+
+            txApp.delete(slip);
+        }
+
+        // Delete the parent payroll run record
+        txApp.delete(run);
+    });
+
+    return c.json(200, { success: true, message: "Payroll run reverted successfully." });
+});

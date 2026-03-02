@@ -133,5 +133,9 @@ export const payrollService = {
 
   getStats: async (): Promise<PayrollStats> => {
     return await pb.send('/api/payroll/stats', { method: 'GET' })
-  }
+  },
+
+  revertRun: async (runId: string): Promise<void> => {
+    return await pb.send('/api/payroll/revert', { method: 'POST', body: { runId } })
+  },
 }
