@@ -1,6 +1,256 @@
 // @ts-check
 /// <reference path="../pb_data/types.d.ts" />
 
+routerAdd("GET", "/api/payroll/preview", (e) => {
+    const app = $app;
+
+    // --- Helper: Convert transaction unit to cash ---
+    const toCash = (t, employee) => {
+        const monthlySalary = employee.getFloat("monthlySalary");
+        const workHours = employee.getFloat("workHours");
+        const hourlyRate = workHours > 0 ? monthlySalary / workHours : 0;
+        const dailyRate = monthlySalary / 30;
+        const unit = t.getString("unit");
+        const amount = t.getFloat("amount");
+
+        if (unit === 'cash') return amount;
+        if (unit === 'hours') return amount * hourlyRate;
+        if (unit === 'days') return amount * dailyRate;
+        return 0;
+    };
+
+    // --- 1. Fetch departments ---
+    const allDepts = app.findRecordsByFilter("departments", "id != ''", "created", 10000, 0);
+    const structuralDepts = [];
+    const functionalDepts = [];
+    const deptMap = {}; // id -> record
+
+    for (let i = 0; i < allDepts.length; i++) {
+        const d = allDepts[i];
+        deptMap[d.id] = d;
+        if (d.getString("type") === "structural") {
+            structuralDepts.push(d);
+        } else {
+            functionalDepts.push(d);
+        }
+    }
+
+    // Build parentId -> [sub dept ids] map
+    const parentToSubs = {};
+    for (let i = 0; i < structuralDepts.length; i++) {
+        parentToSubs[structuralDepts[i].id] = [];
+    }
+    // Build subId -> parentId map
+    const subToParent = {};
+    for (let i = 0; i < functionalDepts.length; i++) {
+        const sub = functionalDepts[i];
+        const pid = sub.getString("parentId");
+        if (pid && parentToSubs[pid]) {
+            parentToSubs[pid].push(sub.id);
+            subToParent[sub.id] = pid;
+        }
+    }
+
+    // --- 2. Fetch active employees ---
+    const employees = app.findRecordsByFilter("employees", "isArchived = false", "-created", 10000, 0);
+
+    // --- 3. Fetch open transactions ---
+    const transactions = app.findRecordsByFilter("transactions", "isClosed = false", "-created", 10000, 0);
+
+    // Group transactions by employeeId
+    const empTxMap = {};
+    for (let i = 0; i < transactions.length; i++) {
+        const t = transactions[i];
+        const empId = t.getString("employeeId");
+        if (!empTxMap[empId]) empTxMap[empId] = [];
+        empTxMap[empId].push(t);
+    }
+
+    // --- 4. Calculate per-employee slips and group ---
+    // Structure: parentId -> { subId -> [slips] }
+    const groupData = {};
+    for (let i = 0; i < structuralDepts.length; i++) {
+        const pid = structuralDepts[i].id;
+        groupData[pid] = {};
+        const subs = parentToSubs[pid] || [];
+        for (let j = 0; j < subs.length; j++) {
+            groupData[pid][subs[j]] = [];
+        }
+        groupData[pid]["_unassigned"] = []; // employees in structural dept directly
+    }
+    groupData["other"] = { "_unassigned": [] }; // fallback
+
+    let globalBasic = 0;
+    let globalNet = 0;
+
+    for (let i = 0; i < employees.length; i++) {
+        const emp = employees[i];
+        const empId = emp.id;
+        const deptId = emp.getString("department");
+        const empTx = empTxMap[empId] || [];
+
+        let overtime = 0;
+        let bonus = 0;
+        let deduction = 0;
+        let advance = 0;
+
+        for (let j = 0; j < empTx.length; j++) {
+            const t = empTx[j];
+            const cat = t.getString("category");
+            const val = toCash(t, emp);
+            if (cat === 'overtime') overtime += val;
+            else if (cat === 'bonus') bonus += val;
+            else if (cat === 'deduction') deduction += val;
+            else if (cat === 'advance') advance += val;
+        }
+
+        const basicSalary = emp.getFloat("monthlySalary");
+        const totalAdditions = overtime + bonus;
+        const totalDeductions = deduction + advance;
+        const netSalary = basicSalary + totalAdditions - totalDeductions;
+
+        globalBasic += basicSalary;
+        globalNet += netSalary;
+
+        const slip = {
+            employeeId: empId,
+            name: emp.getString("name"),
+            jobTitle: emp.getString("jobTitle"),
+            departmentId: deptId,
+            basicSalary: basicSalary,
+            overtimeAmount: overtime,
+            bonusAmount: bonus,
+            deductionAmount: deduction,
+            advanceAmount: advance,
+            additions: totalAdditions,
+            deductions: totalDeductions,
+            netSalary: netSalary
+        };
+
+        // Determine which parent group this employee falls into
+        const parentId = subToParent[deptId];
+        if (parentId && groupData[parentId]) {
+            if (groupData[parentId][deptId]) {
+                groupData[parentId][deptId].push(slip);
+            } else {
+                groupData[parentId][deptId] = [slip];
+            }
+        } else if (groupData[deptId]) {
+            // Employee is assigned directly to a structural dept
+            groupData[deptId]["_unassigned"].push(slip);
+        } else {
+            // Fallback: unknown department
+            groupData["other"]["_unassigned"].push(slip);
+        }
+    }
+
+    // --- 5. Build response ---
+    const departmentGroups = [];
+
+    for (let i = 0; i < structuralDepts.length; i++) {
+        const parent = structuralDepts[i];
+        const pid = parent.id;
+        const subGroups = [];
+        let parentBasic = 0;
+        let parentNet = 0;
+        let parentCount = 0;
+
+        const subIds = parentToSubs[pid] || [];
+        for (let j = 0; j < subIds.length; j++) {
+            const sid = subIds[j];
+            const slips = (groupData[pid] && groupData[pid][sid]) ? groupData[pid][sid] : [];
+            if (slips.length === 0) continue;
+
+            let subBasic = 0;
+            let subNet = 0;
+            for (let k = 0; k < slips.length; k++) {
+                subBasic += slips[k].basicSalary;
+                subNet += slips[k].netSalary;
+            }
+
+            parentBasic += subBasic;
+            parentNet += subNet;
+            parentCount += slips.length;
+
+            subGroups.push({
+                id: sid,
+                label: deptMap[sid] ? deptMap[sid].getString("name") : sid,
+                totalBasic: subBasic,
+                totalNet: subNet,
+                employeeCount: slips.length,
+                slips: slips
+            });
+        }
+
+        // Add unassigned employees (directly in structural dept)
+        const unassigned = (groupData[pid] && groupData[pid]["_unassigned"]) ? groupData[pid]["_unassigned"] : [];
+        if (unassigned.length > 0) {
+            let uBasic = 0;
+            let uNet = 0;
+            for (let k = 0; k < unassigned.length; k++) {
+                uBasic += unassigned[k].basicSalary;
+                uNet += unassigned[k].netSalary;
+            }
+            parentBasic += uBasic;
+            parentNet += uNet;
+            parentCount += unassigned.length;
+
+            subGroups.push({
+                id: "_unassigned",
+                label: "Other",
+                totalBasic: uBasic,
+                totalNet: uNet,
+                employeeCount: unassigned.length,
+                slips: unassigned
+            });
+        }
+
+        if (parentCount === 0) continue;
+
+        departmentGroups.push({
+            id: pid,
+            label: parent.getString("name"),
+            totalBasic: parentBasic,
+            totalNet: parentNet,
+            employeeCount: parentCount,
+            subGroups: subGroups
+        });
+    }
+
+    // Add "other" group for employees with unknown departments
+    const otherSlips = (groupData["other"] && groupData["other"]["_unassigned"]) ? groupData["other"]["_unassigned"] : [];
+    if (otherSlips.length > 0) {
+        let oBasic = 0;
+        let oNet = 0;
+        for (let k = 0; k < otherSlips.length; k++) {
+            oBasic += otherSlips[k].basicSalary;
+            oNet += otherSlips[k].netSalary;
+        }
+        departmentGroups.push({
+            id: "other",
+            label: "Other",
+            totalBasic: oBasic,
+            totalNet: oNet,
+            employeeCount: otherSlips.length,
+            subGroups: [{
+                id: "_other",
+                label: "Other",
+                totalBasic: oBasic,
+                totalNet: oNet,
+                employeeCount: otherSlips.length,
+                slips: otherSlips
+            }]
+        });
+    }
+
+    return e.json(200, {
+        globalBasic: globalBasic,
+        globalNet: globalNet,
+        employeeCount: employees.length,
+        departmentGroups: departmentGroups
+    });
+});
+
 routerAdd("POST", "/api/payroll/close", (c) => {
     const app = $app;
     let runId;

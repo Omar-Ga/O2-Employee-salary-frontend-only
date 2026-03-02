@@ -3,6 +3,47 @@ import { PayrollSlipsResponse, EmployeesResponse, TransactionsResponse } from '@
 import { pb } from '@/lib/pocketbase'
 import type { ListResult } from 'pocketbase'
 
+// --- Preview types (from /api/payroll/preview) ---
+export interface PreviewSlip {
+  employeeId: string
+  name: string
+  jobTitle: string
+  departmentId: string
+  basicSalary: number
+  overtimeAmount: number
+  bonusAmount: number
+  deductionAmount: number
+  advanceAmount: number
+  additions: number
+  deductions: number
+  netSalary: number
+}
+
+export interface PreviewSubGroup {
+  id: string
+  label: string
+  totalBasic: number
+  totalNet: number
+  employeeCount: number
+  slips: PreviewSlip[]
+}
+
+export interface PreviewDepartmentGroup {
+  id: string
+  label: string
+  totalBasic: number
+  totalNet: number
+  employeeCount: number
+  subGroups: PreviewSubGroup[]
+}
+
+export interface PayrollPreviewResponse {
+  globalBasic: number
+  globalNet: number
+  employeeCount: number
+  departmentGroups: PreviewDepartmentGroup[]
+}
+
 // Expanded slip type for history queries that include employee + transaction relations
 type ExpandedPayrollSlip = PayrollSlipsResponse<{
   employeeId: EmployeesResponse
@@ -140,5 +181,9 @@ export const payrollService = {
 
   getStats: async (): Promise<PayrollStats> => {
     return await pb.send('/api/payroll/stats', { method: 'GET' })
+  },
+
+  getPreview: async (): Promise<PayrollPreviewResponse> => {
+    return await pb.send('/api/payroll/preview', { method: 'GET' })
   }
 }

@@ -1,9 +1,7 @@
 import { Box, Button, HStack, Heading, Badge, Text, Tabs, Stack, Icon, Spinner, Center } from "@chakra-ui/react"
 import { useTranslation } from "react-i18next"
-import { employeeService } from "@/services/employee.service"
 import { useQuery, useMutation, useQueryClient } from "@tanstack/react-query"
 import { payrollService } from "@/services/payroll.service"
-import { transactionService } from "@/services/transaction.service"
 import { LuWallet, LuHistory, LuCheck, LuTrendingUp, LuBanknote, LuPrinter } from "react-icons/lu"
 import { formatCurrency } from "@/lib/utils"
 import { useState, useMemo, useRef } from "react"
@@ -13,7 +11,7 @@ import { PayrollReportPrintTemplate } from "@/components/payroll/PayrollReportPr
 import { toaster } from "@/components/ui/toaster"
 import { TransactionDrawer } from "@/components/transactions/TransactionDrawer"
 import { useDepartments } from "@/hooks/useDepartments"
-import { DepartmentPayrollGroup } from "@/components/payroll/DepartmentPayrollGroup"
+import { PreviewDepartmentPayrollGroup } from "@/components/payroll/PreviewDepartmentPayrollGroup"
 import { HistoricalDepartmentPayrollGroup } from "@/components/payroll/HistoricalDepartmentPayrollGroup"
 import { PayrollRun, PayrollSlip } from "@/types"
 import {
@@ -59,38 +57,22 @@ export const Payroll = () => {
 
 const PayrollRunView = () => {
   const { t } = useTranslation('payroll')
-  const { data: employeesData, isLoading: isEmpLoading } = useQuery({
-    queryKey: ['employees', 'active', 'all'],
-    queryFn: () => employeeService.getAllActive()
-  })
+  const queryClient = useQueryClient()
 
-  // We fetch all active employees to accurately group and sum totals for the current run
-  const employees = employeesData || []
-
-  // Fetch transactions only for the currently visible employees
-  const employeeIds = useMemo(() => employees.map(e => e.id), [employees])
-  const { data: transactions = [] } = useQuery({
-    queryKey: ['transactions', 'open'],
-    queryFn: () => transactionService.getForEmployees(employeeIds),
-    enabled: employeeIds.length > 0
-  })
-
-  // Fetch stats for the global totals (server-side calculation)
-  const { data: stats } = useQuery({
-    queryKey: ['payrollStats'],
-    queryFn: payrollService.getStats,
+  // Single backend call — the server is the Single Source of Truth for ALL payroll math
+  const { data: preview, isLoading } = useQuery({
+    queryKey: ['payrollPreview'],
+    queryFn: payrollService.getPreview,
     staleTime: 0
   })
 
-  const { departments: departmentConfig } = useDepartments()
-
-  const [selectedEmp, setSelectedEmp] = useState<string | null>(null) // For Add Transaction Dialog
+  const [selectedEmp, setSelectedEmp] = useState<string | null>(null)
   const [isTxDrawerOpen, setIsTxDrawerOpen] = useState(false)
-  const queryClient = useQueryClient()
 
   const closeMonthMutation = useMutation({
     mutationFn: () => payrollService.closeMonth(),
     onSuccess: () => {
+      queryClient.invalidateQueries({ queryKey: ['payrollPreview'] })
       queryClient.invalidateQueries({ queryKey: ['transactions'] })
       queryClient.invalidateQueries({ queryKey: ['payroll_runs'] })
       queryClient.invalidateQueries({ queryKey: ['lastClosedPayroll'] })
@@ -103,46 +85,24 @@ const PayrollRunView = () => {
   })
 
   const handleCloseMonth = () => {
-    if (employees.length === 0) return
+    if (!preview || preview.employeeCount === 0) return
     closeMonthMutation.mutate()
   }
 
-  // Grouping logic (for the current page)
-  const groupedEmployees = useMemo(() => {
-    const groups = new Map<string, import("@/types").Employee[]>()
-
-    departmentConfig.forEach(parent => {
-      groups.set(parent.id, [])
-    })
-    groups.set('other', [])
-
-    employees.forEach((e) => {
-      const parent = departmentConfig.find(p => p.subDepartments.some(sub => sub.id === e.department))
-      const groupId = parent ? parent.id : 'other'
-      if (groups.has(groupId)) {
-        groups.get(groupId)!.push(e)
-      } else {
-        groups.get('other')!.push(e)
-      }
-    })
-
-    return groups
-  }, [employees, departmentConfig])
-
-  if (isEmpLoading) return <Center py="20"><Spinner /></Center>
+  if (isLoading) return <Center py="20"><Spinner /></Center>
 
   return (
     <Stack gap="6">
       <HStack justify="space-between" align="stretch">
         <HStack gap="4" flex="1">
-          {/* Summary Cards - Powered by Server Stats */}
+          {/* Summary Cards — data from the same backend source as the department groups */}
           <Box p="4" borderWidth="1px" borderRadius="xl" bg="white" flex="1">
             <HStack gap="3" color="gray.500" mb="2">
               <Icon as={LuBanknote} boxSize="5" />
               <Text fontSize="sm" fontWeight="medium" textTransform="uppercase">{t('run.globalTotalBasic', { defaultValue: 'Total Basic Payroll' })}</Text>
             </HStack>
             <Text fontSize="3xl" fontWeight="bold" color="gray.800">
-              {formatCurrency(stats?.currentGross || 0)}
+              {formatCurrency(preview?.globalBasic || 0)}
             </Text>
           </Box>
           <Box p="4" borderWidth="1px" borderRadius="xl" bg="white" flex="1">
@@ -151,7 +111,7 @@ const PayrollRunView = () => {
               <Text fontSize="sm" fontWeight="medium" textTransform="uppercase">{t('run.globalTotalNet', { defaultValue: 'Total Net Payout' })}</Text>
             </HStack>
             <Text fontSize="3xl" fontWeight="bold" color="green.600">
-              {formatCurrency(stats?.currentNetTotal || 0)}
+              {formatCurrency(preview?.globalNet || 0)}
             </Text>
           </Box>
         </HStack>
@@ -164,40 +124,21 @@ const PayrollRunView = () => {
       </HStack>
 
       <Stack gap="4">
-        {departmentConfig.map(parent => {
-          const groupEmployees = groupedEmployees.get(parent.id) || []
-          if (groupEmployees.length === 0) return null
-
-          return (
-            <DepartmentPayrollGroup
-              key={parent.id}
-              department={parent}
-              employees={groupEmployees}
-              transactions={transactions}
-              onManage={(id) => { setSelectedEmp(id); setIsTxDrawerOpen(true) }}
-            />
-          )
-        })}
-
-        {/* Fallback for 'Other' */}
-        {(groupedEmployees.get('other')?.length || 0) > 0 && (
-          <DepartmentPayrollGroup
-            department={{ id: 'other', label: t('tabs.other', { ns: 'employees', defaultValue: 'Other' }), colorPalette: 'gray', subDepartments: [] }}
-            employees={groupedEmployees.get('other') || []}
-            transactions={transactions}
+        {(preview?.departmentGroups || []).map(group => (
+          <PreviewDepartmentPayrollGroup
+            key={group.id}
+            group={group}
             onManage={(id) => { setSelectedEmp(id); setIsTxDrawerOpen(true) }}
           />
-        )}
+        ))}
       </Stack>
-
-      {/* No pagination controls — we fetch all active employees for accurate totals */}
 
       <TransactionDrawer
         open={isTxDrawerOpen}
         onOpenChange={setIsTxDrawerOpen}
         employeeIds={selectedEmp ? [selectedEmp] : []}
         onSuccess={() => {
-          // Invalidate stats and transactions
+          queryClient.invalidateQueries({ queryKey: ['payrollPreview'] })
           queryClient.invalidateQueries({ queryKey: ['payrollStats'] })
           queryClient.invalidateQueries({ queryKey: ['transactions'] })
         }}
