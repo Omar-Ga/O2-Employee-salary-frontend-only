@@ -177,12 +177,7 @@ routerAdd("POST", "/api/payroll/revert", (c) => {
     }
 
     // --- ATOMIC REVERT ---
-    // Diagnostic counters
-    let slipsFound = 0;
-    let totalTxIdsFound = 0;
     let transactionsRestored = 0;
-    let transactionsSkipped = 0;
-    const debugSlipDetails = [];
 
     app.runInTransaction((txApp) => {
         // 1. Fetch all slips for this run
@@ -195,33 +190,29 @@ routerAdd("POST", "/api/payroll/revert", (c) => {
             { runId: runId }
         );
 
-        slipsFound = slips.length;
-
-        // 2. Collect ALL transaction IDs from all slips FIRST (before any deletes)
+        // 2. Collect ALL transaction IDs from all slips (before any deletes)
         const allTxIds = [];
         for (let i = 0; i < slips.length; i++) {
             const slip = slips[i];
             if (!slip) continue;
 
-            // Try multiple ways to get the transaction IDs
             const rawValue = slip.get("transactions");
-            const slipDebug = {
-                slipId: slip.id,
-                rawValueType: typeof rawValue,
-                rawValueStr: JSON.stringify(rawValue),
-                rawValueLength: rawValue ? rawValue.length : "null_or_undefined",
-            };
-            debugSlipDetails.push(slipDebug);
 
-            // Handle whatever format the relation field returns
-            if (rawValue && rawValue.length > 0) {
+            // CRITICAL: PocketBase Goja returns a string for single-value relations
+            // and an array for multi-value relations. Normalize to always be an array.
+            let txIds = [];
+            if (typeof rawValue === "string" && rawValue.length > 0) {
+                txIds = [rawValue];
+            } else if (rawValue && typeof rawValue === "object" && rawValue.length > 0) {
                 for (let j = 0; j < rawValue.length; j++) {
-                    allTxIds.push(rawValue[j]);
+                    txIds.push(rawValue[j]);
                 }
             }
-        }
 
-        totalTxIdsFound = allTxIds.length;
+            for (let j = 0; j < txIds.length; j++) {
+                allTxIds.push(txIds[j]);
+            }
+        }
 
         // 3. Reopen ALL transactions
         for (let k = 0; k < allTxIds.length; k++) {
@@ -231,11 +222,9 @@ routerAdd("POST", "/api/payroll/revert", (c) => {
                     tx.set("isClosed", false);
                     txApp.save(tx);
                     transactionsRestored++;
-                } else {
-                    transactionsSkipped++;
                 }
             } catch (e) {
-                transactionsSkipped++;
+                // Transaction may have been manually deleted — skip safely
             }
         }
 
@@ -246,12 +235,6 @@ routerAdd("POST", "/api/payroll/revert", (c) => {
     return c.json(200, {
         success: true,
         message: "Payroll run reverted.",
-        diagnostics: {
-            slipsFound: slipsFound,
-            totalTxIdsFound: totalTxIdsFound,
-            transactionsRestored: transactionsRestored,
-            transactionsSkipped: transactionsSkipped,
-            slipDetails: debugSlipDetails,
-        }
+        transactionsRestored: transactionsRestored
     });
 });
