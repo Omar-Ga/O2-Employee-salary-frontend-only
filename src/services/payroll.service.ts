@@ -77,6 +77,13 @@ export const payrollService = {
     return await pb.send('/api/payroll/close', { method: 'POST' })
   },
 
+  restoreRun: async (runId: string) => {
+    return await pb.send('/api/payroll/restore', {
+      method: 'POST',
+      body: JSON.stringify({ runId }),
+    })
+  },
+
   getRuns: async (page = 1, perPage = 10): Promise<ListResult<PayrollRun>> => {
     return await pb.collection('payroll_runs').getList<PayrollRun>(page, perPage, {
       sort: '-created',

@@ -148,3 +148,43 @@ routerAdd("POST", "/api/payroll/close", (c) => {
 
     return c.json(200, { success: true, runId: runId });
 });
+
+routerAdd("POST", "/api/payroll/restore", (c) => {
+    const body = $apis.requestInfo(c).body;
+    const runId = body.runId;
+    if (!runId) throw new BadRequestError("runId is required");
+
+    const app = $app;
+    app.runInTransaction((txApp) => {
+        // 1. Verify the run exists
+        const run = txApp.findRecordById("payroll_runs", runId);
+
+        // 2. Fetch all slips for this run to get transaction IDs
+        const slips = txApp.findRecordsByFilter(
+            "payroll_slips",
+            `payrollRunId = "${runId}"`,
+            "",
+            10000,
+            0
+        );
+
+        // 3. Re-open all linked transactions
+        for (let i = 0; i < slips.length; i++) {
+            const txIds = slips[i].get("transactions") || [];
+            for (let j = 0; j < txIds.length; j++) {
+                try {
+                    const t = txApp.findRecordById("transactions", txIds[j]);
+                    t.set("isClosed", false);
+                    txApp.save(t);
+                } catch (e) {
+                    // Ignore missing transaction
+                }
+            }
+        }
+
+        // 4. Delete the run (this cascade deletes all slips due to schema rule)
+        txApp.delete(run);
+    });
+
+    return c.json(200, { success: true });
+});

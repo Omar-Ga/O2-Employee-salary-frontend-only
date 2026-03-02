@@ -29,7 +29,15 @@
     "closed": "Closed",
     "totalPayout": "Total Payout",
     "loading": "Loading history...",
-    "printPayslips": "Print Payslips"
+    "printPayslips": "Print Payslips",
+    "restore": "Restore",
+    "restoreConfirmTitle": "Restore Closed Month",
+    "restoreConfirmBody": "This will re-open all transactions from this period and delete the payroll record. This action cannot be undone.",
+    "restoreConfirm": "Restore",
+    "restoreCancel": "Cancel",
+    "toast": {
+      "restored": "Month restored — transactions are now editable"
+    }
   },
   "dialog": {
     "title": "Add Transaction for {{name}}",

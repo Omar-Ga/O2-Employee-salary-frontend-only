@@ -22,5 +22,9 @@ dist-ssr
 *.sln
 *.sw?
 
+# PocketBase data
+pb/pb_data/
+pb/pb_migrations_backup/
+
 
 

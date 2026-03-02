@@ -29,7 +29,15 @@
     "closed": "مغلق",
     "totalPayout": "إجمالي المدفوعات",
     "loading": "جاري تحميل السجل...",
-    "printPayslips": "طباعة القسائم"
+    "printPayslips": "طباعة القسائم",
+    "restore": "استعادة",
+    "restoreConfirmTitle": "استعادة الشهر المغلق",
+    "restoreConfirmBody": "سيتم إعادة فتح جميع المعاملات من هذه الفترة وحذف سجل الرواتب. لا يمكن التراجع عن هذا الإجراء.",
+    "restoreConfirm": "استعادة",
+    "restoreCancel": "إلغاء",
+    "toast": {
+      "restored": "تم استعادة الشهر — المعاملات قابلة للتعديل الآن"
+    }
   },
   "dialog": {
     "title": "إضافة معاملة لـ {{name}}",

@@ -16,6 +16,17 @@ import { useDepartments } from "@/hooks/useDepartments"
 import { DepartmentPayrollGroup } from "@/components/payroll/DepartmentPayrollGroup"
 import { HistoricalDepartmentPayrollGroup } from "@/components/payroll/HistoricalDepartmentPayrollGroup"
 import { PayrollRun, PayrollSlip } from "@/types"
+import {
+  DialogActionTrigger,
+  DialogBody,
+  DialogCloseTrigger,
+  DialogContent,
+  DialogFooter,
+  DialogHeader,
+  DialogRoot,
+  DialogTitle,
+  DialogTrigger,
+} from "@/components/ui/dialog"
 
 export const Payroll = () => {
   const { t } = useTranslation(['payroll', 'sidebar'])
@@ -200,6 +211,23 @@ const PayrollHistoryView = () => {
   const { departments: departmentConfig } = useDepartments()
   const [selectedRunId, setSelectedRunId] = useState<string | null>(null)
   const [page, setPage] = useState(1)
+  const queryClient = useQueryClient()
+
+  const restoreMutation = useMutation({
+    mutationFn: (runId: string) => payrollService.restoreRun(runId),
+    onSuccess: () => {
+      queryClient.invalidateQueries({ queryKey: ['transactions'] })
+      queryClient.invalidateQueries({ queryKey: ['payroll_runs'] })
+      queryClient.invalidateQueries({ queryKey: ['run_slips'] })
+      queryClient.invalidateQueries({ queryKey: ['lastClosedPayroll'] })
+      queryClient.invalidateQueries({ queryKey: ['payrollStats'] })
+      setSelectedRunId(null)
+      toaster.create({ title: t('history.toast.restored'), type: 'success' })
+    },
+    onError: (err: Error) => {
+      toaster.create({ title: "Restore Failed", description: err.message, type: "error" })
+    }
+  })
 
   // Print ref and handler — wired to the hidden PayslipsPrintTemplate
   const printPayslipsRef = useRef<HTMLDivElement>(null)
@@ -269,6 +297,35 @@ const PayrollHistoryView = () => {
                 {formatCurrency(selectedRun.totalNet || 0)}
               </Text>
             </Box>
+
+            <DialogRoot role="alertdialog">
+              <DialogTrigger asChild>
+                <Button colorPalette="red" variant="outline" size="sm">
+                  {t('history.restore')}
+                </Button>
+              </DialogTrigger>
+              <DialogContent>
+                <DialogHeader>
+                  <DialogTitle>{t('history.restoreConfirmTitle')}</DialogTitle>
+                </DialogHeader>
+                <DialogBody>
+                  {t('history.restoreConfirmBody')}
+                </DialogBody>
+                <DialogFooter>
+                  <DialogActionTrigger asChild>
+                    <Button variant="outline">{t('history.restoreCancel')}</Button>
+                  </DialogActionTrigger>
+                  <Button
+                    colorPalette="red"
+                    onClick={() => restoreMutation.mutate(selectedRun.id)}
+                    loading={restoreMutation.isPending}
+                  >
+                    {t('history.restoreConfirm')}
+                  </Button>
+                </DialogFooter>
+                <DialogCloseTrigger />
+              </DialogContent>
+            </DialogRoot>
             <Button
               colorPalette="gray"
               variant="outline"
@@ -340,6 +397,8 @@ const PayrollHistoryView = () => {
               key={run.id}
               run={run}
               onClick={() => setSelectedRunId(run.id)}
+              onRestore={(id) => restoreMutation.mutate(id)}
+              isRestoring={restoreMutation.isPending}
             />
           ))}
 
@@ -369,7 +428,7 @@ const PayrollHistoryView = () => {
   )
 }
 
-const HistoryRunCard = ({ run, onClick }: { run: PayrollRun; onClick: () => void }) => {
+const HistoryRunCard = ({ run, onClick, onRestore, isRestoring }: { run: PayrollRun; onClick: () => void; onRestore: (id: string) => void; isRestoring: boolean }) => {
   const { t } = useTranslation('payroll')
 
   // We need slips for printing, but we don't have them in the list view.
@@ -400,7 +459,36 @@ const HistoryRunCard = ({ run, onClick }: { run: PayrollRun; onClick: () => void
           </HStack>
           <Text fontSize="sm" color="gray.500">{new Date(run.date).toLocaleDateString()}</Text>
         </Box>
-        <HStack>
+        <HStack onClick={(e) => e.stopPropagation()}>
+          <DialogRoot role="alertdialog">
+            <DialogTrigger asChild>
+              <Button size="xs" colorPalette="red" variant="ghost" mr="2">
+                {t('history.restore')}
+              </Button>
+            </DialogTrigger>
+            <DialogContent>
+              <DialogHeader>
+                <DialogTitle>{t('history.restoreConfirmTitle')}</DialogTitle>
+              </DialogHeader>
+              <DialogBody>
+                {t('history.restoreConfirmBody')}
+              </DialogBody>
+              <DialogFooter>
+                <DialogActionTrigger asChild>
+                  <Button variant="outline">{t('history.restoreCancel')}</Button>
+                </DialogActionTrigger>
+                <Button
+                  colorPalette="red"
+                  onClick={() => onRestore(run.id)}
+                  loading={isRestoring}
+                >
+                  {t('history.restoreConfirm')}
+                </Button>
+              </DialogFooter>
+              <DialogCloseTrigger />
+            </DialogContent>
+          </DialogRoot>
+
           <Badge colorPalette="green" variant="subtle" borderRadius="full">{t('history.closed')}</Badge>
         </HStack>
       </HStack>
