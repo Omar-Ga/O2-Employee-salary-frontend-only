@@ -151,12 +151,20 @@ routerAdd("POST", "/api/payroll/close", (c) => {
 
 routerAdd("POST", "/api/payroll/revert", (c) => {
     const app = $app;
-    const data = {};
-    c.bindBody(data);
-    const runId = data["runId"];
 
+    // --- DEBUG: Echo exactly what the server sees ---
+    const info = c.requestInfo();
+    const body = info.body;
+    const runId = body ? body["runId"] : null;
+
+    // Temporary debug: return what we received so we can diagnose
     if (!runId) {
-        return c.json(400, { message: "runId is required." });
+        return c.json(400, {
+            message: "runId is required.",
+            debug_body: JSON.stringify(body),
+            debug_bodyType: typeof body,
+            debug_keys: body ? Object.keys(body) : "body_is_null"
+        });
     }
 
     // --- FETCH & VALIDATE RUN ---
