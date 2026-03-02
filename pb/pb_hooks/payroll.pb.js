@@ -1,63 +1,73 @@
 // @ts-check
 /// <reference path="../pb_data/types.d.ts" />
 
-routerAdd("GET", "/api/payroll/preview", (e) => {
-    const app = $app;
+/**
+ * --- SHARED HELPERS ---
+ */
 
-    // --- Helper: Convert transaction unit to cash ---
-    const toCash = (t, employee) => {
-        const monthlySalary = employee.getFloat("monthlySalary");
-        const workHours = employee.getFloat("workHours");
-        const hourlyRate = workHours > 0 ? monthlySalary / workHours : 0;
-        const dailyRate = monthlySalary / 30;
-        const unit = t.getString("unit");
-        const amount = t.getFloat("amount");
+// Convert transaction unit to cash value based on employee salary
+const toCash = (t, employee) => {
+    const monthlySalary = employee.getFloat("monthlySalary");
+    const workHours = employee.getFloat("workHours");
+    const hourlyRate = workHours > 0 ? monthlySalary / workHours : 0;
+    const dailyRate = monthlySalary / 30;
+    const unit = t.getString("unit");
+    const amount = t.getFloat("amount");
 
-        if (unit === 'cash') return amount;
-        if (unit === 'hours') return amount * hourlyRate;
-        if (unit === 'days') return amount * dailyRate;
-        return 0;
+    if (unit === 'cash') return amount;
+    if (unit === 'hours') return amount * hourlyRate;
+    if (unit === 'days') return amount * dailyRate;
+    return 0;
+};
+
+// Calculate slip details for an employee
+const calculateSlip = (emp, empTransactions) => {
+    let overtime = 0, bonus = 0, deduction = 0, advance = 0;
+    const txIds = [];
+
+    for (let i = 0; i < empTransactions.length; i++) {
+        const t = empTransactions[i];
+        const cat = t.getString("category");
+        const val = toCash(t, emp);
+        if (cat === 'overtime') overtime += val;
+        else if (cat === 'bonus') bonus += val;
+        else if (cat === 'deduction') deduction += val;
+        else if (cat === 'advance') advance += val;
+        txIds.push(t.id);
+    }
+
+    const basicSalary = emp.getFloat("monthlySalary");
+    const additions = overtime + bonus;
+    const deductions = deduction + advance;
+    const netSalary = basicSalary + additions - deductions;
+
+    return {
+        employeeId: emp.id,
+        name: emp.getString("name"),
+        jobTitle: emp.getString("jobTitle"),
+        departmentId: emp.getString("department"),
+        basicSalary,
+        overtimeAmount: overtime,
+        bonusAmount: bonus,
+        deductionAmount: deduction,
+        advanceAmount: advance,
+        additions,
+        deductions,
+        netSalary,
+        txIds
     };
+};
 
-    // --- 1. Fetch departments ---
-    const allDepts = app.findRecordsByFilter("departments", "id != ''", "created", 10000, 0);
-    const structuralDepts = [];
-    const functionalDepts = [];
-    const deptMap = {}; // id -> record
+/**
+ * --- ROUTES ---
+ */
 
-    for (let i = 0; i < allDepts.length; i++) {
-        const d = allDepts[i];
-        deptMap[d.id] = d;
-        if (d.getString("type") === "structural") {
-            structuralDepts.push(d);
-        } else {
-            functionalDepts.push(d);
-        }
-    }
-
-    // Build parentId -> [sub dept ids] map
-    const parentToSubs = {};
-    for (let i = 0; i < structuralDepts.length; i++) {
-        parentToSubs[structuralDepts[i].id] = [];
-    }
-    // Build subId -> parentId map
-    const subToParent = {};
-    for (let i = 0; i < functionalDepts.length; i++) {
-        const sub = functionalDepts[i];
-        const pid = sub.getString("parentId");
-        if (pid && parentToSubs[pid]) {
-            parentToSubs[pid].push(sub.id);
-            subToParent[sub.id] = pid;
-        }
-    }
-
-    // --- 2. Fetch active employees ---
+// 1. GET /api/payroll/stats - Dashboard summary
+routerAdd("GET", "/api/payroll/stats", (c) => {
+    const app = $app;
     const employees = app.findRecordsByFilter("employees", "isArchived = false", "-created", 10000, 0);
-
-    // --- 3. Fetch open transactions ---
     const transactions = app.findRecordsByFilter("transactions", "isClosed = false", "-created", 10000, 0);
 
-    // Group transactions by employeeId
     const empTxMap = {};
     for (let i = 0; i < transactions.length; i++) {
         const t = transactions[i];
@@ -66,360 +76,206 @@ routerAdd("GET", "/api/payroll/preview", (e) => {
         empTxMap[empId].push(t);
     }
 
-    // --- 4. Calculate per-employee slips and group ---
-    // Structure: parentId -> { subId -> [slips] }
+    let currentNetTotal = 0, currentDeductionTotal = 0, currentGross = 0;
+    for (let i = 0; i < employees.length; i++) {
+        const emp = employees[i];
+        const slip = calculateSlip(emp, empTxMap[emp.id] || []);
+        currentNetTotal += slip.netSalary;
+        currentDeductionTotal += slip.deductions;
+        currentGross += slip.basicSalary;
+    }
+
+    let lastRunTotal = 0, lastPeriod = null;
+    try {
+        const lastRuns = app.findRecordsByFilter("payroll_runs", "isClosed = true", "-created", 1, 0);
+        if (lastRuns.length > 0) {
+            lastRunTotal = lastRuns[0].getFloat("totalNet");
+            lastPeriod = lastRuns[0].getString("period");
+        }
+    } catch (e) { }
+
+    return c.json(200, {
+        activeCount: employees.length,
+        currentNetTotal,
+        currentDeductionTotal,
+        currentGross,
+        lastRunTotal,
+        lastPeriod
+    });
+});
+
+// 2. GET /api/payroll/preview - Detailed run preview grouped by department
+routerAdd("GET", "/api/payroll/preview", (e) => {
+    const app = $app;
+    const allDepts = app.findRecordsByFilter("departments", "id != ''", "created", 10000, 0);
+    const structuralDepts = [], functionalDepts = [], deptMap = {};
+
+    for (let i = 0; i < allDepts.length; i++) {
+        const d = allDepts[i];
+        deptMap[d.id] = d;
+        if (d.getString("type") === "structural") structuralDepts.push(d);
+        else functionalDepts.push(d);
+    }
+
+    const parentToSubs = {}, subToParent = {};
+    for (let i = 0; i < structuralDepts.length; i++) parentToSubs[structuralDepts[i].id] = [];
+    for (let i = 0; i < functionalDepts.length; i++) {
+        const sub = functionalDepts[i], pid = sub.getString("parentId");
+        if (pid && parentToSubs[pid]) {
+            parentToSubs[pid].push(sub.id);
+            subToParent[sub.id] = pid;
+        }
+    }
+
+    const employees = app.findRecordsByFilter("employees", "isArchived = false", "-created", 10000, 0);
+    const transactions = app.findRecordsByFilter("transactions", "isClosed = false", "-created", 10000, 0);
+
+    const empTxMap = {};
+    for (let i = 0; i < transactions.length; i++) {
+        const t = transactions[i], empId = t.getString("employeeId");
+        if (!empTxMap[empId]) empTxMap[empId] = [];
+        empTxMap[empId].push(t);
+    }
+
     const groupData = {};
     for (let i = 0; i < structuralDepts.length; i++) {
         const pid = structuralDepts[i].id;
-        groupData[pid] = {};
+        groupData[pid] = { "_unassigned": [] };
         const subs = parentToSubs[pid] || [];
-        for (let j = 0; j < subs.length; j++) {
-            groupData[pid][subs[j]] = [];
-        }
-        groupData[pid]["_unassigned"] = []; // employees in structural dept directly
+        for (let j = 0; j < subs.length; j++) groupData[pid][subs[j]] = [];
     }
-    groupData["other"] = { "_unassigned": [] }; // fallback
+    groupData["other"] = { "_unassigned": [] };
 
-    let globalBasic = 0;
-    let globalNet = 0;
+    let globalBasic = 0, globalNet = 0;
 
     for (let i = 0; i < employees.length; i++) {
-        const emp = employees[i];
-        const empId = emp.id;
-        const deptId = emp.getString("department");
-        const empTx = empTxMap[empId] || [];
+        const emp = employees[i], deptId = emp.getString("department");
+        const slip = calculateSlip(emp, empTxMap[emp.id] || []);
+        globalBasic += slip.basicSalary;
+        globalNet += slip.netSalary;
 
-        let overtime = 0;
-        let bonus = 0;
-        let deduction = 0;
-        let advance = 0;
-
-        for (let j = 0; j < empTx.length; j++) {
-            const t = empTx[j];
-            const cat = t.getString("category");
-            const val = toCash(t, emp);
-            if (cat === 'overtime') overtime += val;
-            else if (cat === 'bonus') bonus += val;
-            else if (cat === 'deduction') deduction += val;
-            else if (cat === 'advance') advance += val;
-        }
-
-        const basicSalary = emp.getFloat("monthlySalary");
-        const totalAdditions = overtime + bonus;
-        const totalDeductions = deduction + advance;
-        const netSalary = basicSalary + totalAdditions - totalDeductions;
-
-        globalBasic += basicSalary;
-        globalNet += netSalary;
-
-        const slip = {
-            employeeId: empId,
-            name: emp.getString("name"),
-            jobTitle: emp.getString("jobTitle"),
-            departmentId: deptId,
-            basicSalary: basicSalary,
-            overtimeAmount: overtime,
-            bonusAmount: bonus,
-            deductionAmount: deduction,
-            advanceAmount: advance,
-            additions: totalAdditions,
-            deductions: totalDeductions,
-            netSalary: netSalary
-        };
-
-        // Determine which parent group this employee falls into
         const parentId = subToParent[deptId];
         if (parentId && groupData[parentId]) {
-            if (groupData[parentId][deptId]) {
-                groupData[parentId][deptId].push(slip);
-            } else {
-                groupData[parentId][deptId] = [slip];
-            }
+            if (groupData[parentId][deptId]) groupData[parentId][deptId].push(slip);
+            else groupData[parentId][deptId] = [slip];
         } else if (groupData[deptId]) {
-            // Employee is assigned directly to a structural dept
             groupData[deptId]["_unassigned"].push(slip);
         } else {
-            // Fallback: unknown department
             groupData["other"]["_unassigned"].push(slip);
         }
     }
 
-    // --- 5. Build response ---
     const departmentGroups = [];
-
     for (let i = 0; i < structuralDepts.length; i++) {
-        const parent = structuralDepts[i];
-        const pid = parent.id;
-        const subGroups = [];
-        let parentBasic = 0;
-        let parentNet = 0;
-        let parentCount = 0;
+        const parent = structuralDepts[i], pid = parent.id, subGroups = [];
+        let pBasic = 0, pNet = 0, pCount = 0;
 
         const subIds = parentToSubs[pid] || [];
         for (let j = 0; j < subIds.length; j++) {
-            const sid = subIds[j];
-            const slips = (groupData[pid] && groupData[pid][sid]) ? groupData[pid][sid] : [];
+            const sid = subIds[j], slips = groupData[pid][sid] || [];
             if (slips.length === 0) continue;
-
-            let subBasic = 0;
-            let subNet = 0;
-            for (let k = 0; k < slips.length; k++) {
-                subBasic += slips[k].basicSalary;
-                subNet += slips[k].netSalary;
-            }
-
-            parentBasic += subBasic;
-            parentNet += subNet;
-            parentCount += slips.length;
-
-            subGroups.push({
-                id: sid,
-                label: deptMap[sid] ? deptMap[sid].getString("name") : sid,
-                totalBasic: subBasic,
-                totalNet: subNet,
-                employeeCount: slips.length,
-                slips: slips
-            });
+            let sBasic = 0, sNet = 0;
+            for (let k = 0; k < slips.length; k++) { sBasic += slips[k].basicSalary; sNet += slips[k].netSalary; }
+            pBasic += sBasic; pNet += sNet; pCount += slips.length;
+            subGroups.push({ id: sid, label: deptMap[sid]?.getString("name") || sid, totalBasic: sBasic, totalNet: sNet, employeeCount: slips.length, slips });
         }
 
-        // Add unassigned employees (directly in structural dept)
-        const unassigned = (groupData[pid] && groupData[pid]["_unassigned"]) ? groupData[pid]["_unassigned"] : [];
+        const unassigned = groupData[pid]["_unassigned"] || [];
         if (unassigned.length > 0) {
-            let uBasic = 0;
-            let uNet = 0;
-            for (let k = 0; k < unassigned.length; k++) {
-                uBasic += unassigned[k].basicSalary;
-                uNet += unassigned[k].netSalary;
-            }
-            parentBasic += uBasic;
-            parentNet += uNet;
-            parentCount += unassigned.length;
-
-            subGroups.push({
-                id: "_unassigned",
-                label: "Other",
-                totalBasic: uBasic,
-                totalNet: uNet,
-                employeeCount: unassigned.length,
-                slips: unassigned
-            });
+            let uBasic = 0, uNet = 0;
+            for (let k = 0; k < unassigned.length; k++) { uBasic += unassigned[k].basicSalary; uNet += unassigned[k].netSalary; }
+            pBasic += uBasic; pNet += uNet; pCount += unassigned.length;
+            subGroups.push({ id: "_unassigned", label: "Other", totalBasic: uBasic, totalNet: uNet, employeeCount: unassigned.length, slips: unassigned });
         }
 
-        if (parentCount === 0) continue;
-
-        departmentGroups.push({
-            id: pid,
-            label: parent.getString("name"),
-            totalBasic: parentBasic,
-            totalNet: parentNet,
-            employeeCount: parentCount,
-            subGroups: subGroups
-        });
+        if (pCount > 0) departmentGroups.push({ id: pid, label: parent.getString("name"), totalBasic: pBasic, totalNet: pNet, employeeCount: pCount, subGroups });
     }
 
-    // Add "other" group for employees with unknown departments
-    const otherSlips = (groupData["other"] && groupData["other"]["_unassigned"]) ? groupData["other"]["_unassigned"] : [];
+    const otherSlips = groupData["other"]["_unassigned"] || [];
     if (otherSlips.length > 0) {
-        let oBasic = 0;
-        let oNet = 0;
-        for (let k = 0; k < otherSlips.length; k++) {
-            oBasic += otherSlips[k].basicSalary;
-            oNet += otherSlips[k].netSalary;
-        }
-        departmentGroups.push({
-            id: "other",
-            label: "Other",
-            totalBasic: oBasic,
-            totalNet: oNet,
-            employeeCount: otherSlips.length,
-            subGroups: [{
-                id: "_other",
-                label: "Other",
-                totalBasic: oBasic,
-                totalNet: oNet,
-                employeeCount: otherSlips.length,
-                slips: otherSlips
-            }]
-        });
+        let oBasic = 0, oNet = 0;
+        for (let k = 0; k < otherSlips.length; k++) { oBasic += otherSlips[k].basicSalary; oNet += otherSlips[k].netSalary; }
+        departmentGroups.push({ id: "other", label: "Other", totalBasic: oBasic, totalNet: oNet, employeeCount: otherSlips.length, subGroups: [{ id: "_other", label: "Other", totalBasic: oBasic, totalNet: oNet, employeeCount: otherSlips.length, slips: otherSlips }] });
     }
 
-    return e.json(200, {
-        globalBasic: globalBasic,
-        globalNet: globalNet,
-        employeeCount: employees.length,
-        departmentGroups: departmentGroups
-    });
+    return e.json(200, { globalBasic, globalNet, employeeCount: employees.length, departmentGroups });
 });
 
+// 3. POST /api/payroll/close - Close month and generate slips
 routerAdd("POST", "/api/payroll/close", (c) => {
     const app = $app;
     let runId;
 
-    // Wrap everything in a transaction for atomicity
     app.runInTransaction((txApp) => {
-        // --- PREPARATION ---
+        const employees = txApp.findRecordsByFilter("employees", "isArchived = false", "-created", 10000, 0);
+        const transactions = txApp.findRecordsByFilter("transactions", "isClosed = false", "-created", 10000, 0);
 
-        // Helper: Convert transaction unit to cash
-        const toCash = (t, employee) => {
-            const monthlySalary = employee.getFloat("monthlySalary");
-            const workHours = employee.getFloat("workHours");
-            const hourlyRate = workHours > 0 ? monthlySalary / workHours : 0;
-            const dailyRate = monthlySalary / 30;
-            const unit = t.getString("unit");
-            const amount = t.getFloat("amount");
-
-            if (unit === 'cash') return amount;
-            if (unit === 'hours') return amount * hourlyRate;
-            if (unit === 'days') return amount * dailyRate;
-            return 0;
-        };
-
-        const currentMonth = new Date().toISOString().slice(0, 7); // yyyy-MM
-
-        // --- FETCH DATA ---
-
-        // Fetch all active employees
-        // Using a generous limit of 10,000 to cover all active employees in typical usage.
-        const employees = txApp.findRecordsByFilter(
-            "employees",
-            "isArchived = false",
-            "-created",
-            10000,
-            0
-        );
-
-        // Fetch all open transactions
-        const transactions = txApp.findRecordsByFilter(
-            "transactions",
-            "isClosed = false",
-            "-created",
-            10000,
-            0
-        );
-
-        // Optimization: Group transactions by employeeId
         const empTxMap = {};
-
-        // Iterate transactions
-        // Note: JSVM Goja arrays can be iterated with standard loops
         for (let i = 0; i < transactions.length; i++) {
-            const t = transactions[i];
-            const empId = t.getString("employeeId");
-            if (!empTxMap[empId]) {
-                empTxMap[empId] = [];
-            }
-            empTxMap[empId].push(t);
+            const t = transactions[i], eid = t.getString("employeeId");
+            if (!empTxMap[eid]) empTxMap[eid] = [];
+            empTxMap[eid].push(t);
         }
 
-        // --- EXECUTION ---
+        const runRecord = new Record(app.findCollectionByNameOrId("payroll_runs"));
+        runRecord.set("period", new Date().toISOString().slice(0, 7));
+        runRecord.set("date", new Date().toISOString());
+        runRecord.set("isClosed", true);
+        txApp.save(runRecord);
+        runId = runRecord.id;
 
-        // 1. Create Payroll Run
-        const payrollRunsCollection = app.findCollectionByNameOrId("payroll_runs");
-        const run = new Record(payrollRunsCollection);
-        run.set("period", currentMonth);
-        run.set("date", new Date().toISOString());
-        run.set("isClosed", true);
-        txApp.save(run);
-
-        runId = run.id;
-
-        // Totals accumulators
-        let runTotalBasic = 0;
-        let runTotalNet = 0;
-        let runTotalDeductions = 0;
-        let slipCount = 0;
-
-        // 2. Create Payroll Slips and Update Transactions
-        const payrollSlipsCollection = app.findCollectionByNameOrId("payroll_slips");
+        let totalBasic = 0, totalNet = 0, totalDeductions = 0, slipCount = 0;
+        const slipsColl = app.findCollectionByNameOrId("payroll_slips");
 
         for (let i = 0; i < employees.length; i++) {
             const emp = employees[i];
-            const empId = emp.id;
+            const slipData = calculateSlip(emp, empTxMap[emp.id] || []);
 
-            const empTx = empTxMap[empId] || [];
-
-            // Calculate totals
-            let overtimeAmount = 0;
-            let bonusAmount = 0;
-            let deductionAmount = 0;
-            let advanceAmount = 0;
-
-            const txIds = [];
-
-            for (let j = 0; j < empTx.length; j++) {
-                const t = empTx[j];
-                const cat = t.getString("category");
-                const val = toCash(t, emp);
-
-                if (cat === 'overtime') overtimeAmount += val;
-                else if (cat === 'bonus') bonusAmount += val;
-                else if (cat === 'deduction') deductionAmount += val;
-                else if (cat === 'advance') advanceAmount += val;
-
-                txIds.push(t.id);
-
-                // Mark transaction as closed
-                t.set("isClosed", true);
-                txApp.save(t);
+            // Close transactions
+            const empTxs = empTxMap[emp.id] || [];
+            for (let j = 0; j < empTxs.length; j++) {
+                empTxs[j].set("isClosed", true);
+                txApp.save(empTxs[j]);
             }
 
-            const totalAdditions = overtimeAmount + bonusAmount;
-            const totalDeductions = deductionAmount + advanceAmount;
-            const basicSalary = emp.getFloat("monthlySalary");
-            const netSalary = basicSalary + totalAdditions - totalDeductions;
-
-            runTotalBasic += basicSalary;
-            runTotalNet += netSalary;
-            runTotalDeductions += totalDeductions;
-
-            // Create Slip
-            const slip = new Record(payrollSlipsCollection);
+            const slip = new Record(slipsColl);
             slip.set("payrollRunId", runId);
-            slip.set("employeeId", empId);
-            slip.set("departmentId", emp.getString("department"));
-            slip.set("basicSalary", basicSalary);
-            slip.set("overtimeAmount", overtimeAmount);
-            slip.set("bonusAmount", bonusAmount);
-            slip.set("deductionAmount", deductionAmount);
-            slip.set("advanceAmount", advanceAmount);
-            slip.set("netSalary", netSalary);
-            slip.set("transactions", txIds);
-
+            slip.set("employeeId", slipData.employeeId);
+            slip.set("departmentId", slipData.departmentId);
+            slip.set("basicSalary", slipData.basicSalary);
+            slip.set("overtimeAmount", slipData.overtimeAmount);
+            slip.set("bonusAmount", slipData.bonusAmount);
+            slip.set("deductionAmount", slipData.deductionAmount);
+            slip.set("advanceAmount", slipData.advanceAmount);
+            slip.set("netSalary", slipData.netSalary);
+            slip.set("transactions", slipData.txIds);
             txApp.save(slip);
+
+            totalBasic += slipData.basicSalary;
+            totalNet += slipData.netSalary;
+            totalDeductions += slipData.deductions;
             slipCount++;
         }
 
-        // 3. Update Payroll Run with Totals
-        run.set("totalBasic", runTotalBasic);
-        run.set("totalNet", runTotalNet);
-        run.set("totalDeductions", runTotalDeductions);
-        run.set("employeeCount", slipCount); // Use actual slip count, not employees.length
-        txApp.save(run);
-
+        runRecord.set("totalBasic", totalBasic);
+        runRecord.set("totalNet", totalNet);
+        runRecord.set("totalDeductions", totalDeductions);
+        runRecord.set("employeeCount", slipCount);
+        txApp.save(runRecord);
     });
 
-    return c.json(200, { success: true, runId: runId });
+    return c.json(200, { success: true, runId });
 });
 
+// 4. POST /api/payroll/restore - Revert a closed payroll run
 routerAdd("POST", "/api/payroll/restore", (e) => {
     const runId = e.requestInfo().query["runId"];
     if (!runId) throw new BadRequestError("runId is required");
 
-    let slipCount = 0;
-    let txCount = 0;
-
-    const app = $app;
-    app.runInTransaction((txApp) => {
+    let slipCount = 0, txCount = 0;
+    $app.runInTransaction((txApp) => {
         const run = txApp.findRecordById("payroll_runs", runId);
-
-        const filter = 'payrollRunId = "' + runId + '"';
-        const slips = txApp.findRecordsByFilter(
-            "payroll_slips",
-            filter,
-            "",
-            10000,
-            0
-        );
+        const slips = txApp.findRecordsByFilter("payroll_slips", 'payrollRunId = "' + runId + '"', "", 10000, 0);
         slipCount = slips.length;
 
         for (let i = 0; i < slips.length; i++) {
@@ -430,12 +286,9 @@ routerAdd("POST", "/api/payroll/restore", (e) => {
                     tx.set("isClosed", false);
                     txApp.save(tx);
                     txCount++;
-                } catch (err) {
-                    // transaction was deleted — skip
-                }
+                } catch (err) { }
             }
         }
-
         txApp.delete(run);
     });
 

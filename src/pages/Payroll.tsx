@@ -13,7 +13,6 @@ import { TransactionDrawer } from "@/components/transactions/TransactionDrawer"
 import { useDepartments } from "@/hooks/useDepartments"
 import { PreviewDepartmentPayrollGroup } from "@/components/payroll/PreviewDepartmentPayrollGroup"
 import { HistoricalDepartmentPayrollGroup } from "@/components/payroll/HistoricalDepartmentPayrollGroup"
-import { PayrollRun, PayrollSlip } from "@/types"
 import {
   DialogActionTrigger,
   DialogBody,
