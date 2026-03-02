@@ -94,33 +94,41 @@ routerAdd("POST", "/api/payroll/restore", (e) => {
     const runId = e.requestInfo().query["runId"];
     if (!runId) throw new BadRequestError("runId is required");
 
+    let slipCount = 0;
+    let txCount = 0;
+
     const app = $app;
     app.runInTransaction((txApp) => {
         const run = txApp.findRecordById("payroll_runs", runId);
+
+        const filter = 'payrollRunId = "' + runId + '"';
         const slips = txApp.findRecordsByFilter(
             "payroll_slips",
-            `payrollRunId = "${runId}"`,
+            filter,
             "",
             10000,
             0
         );
+        slipCount = slips.length;
 
         for (let i = 0; i < slips.length; i++) {
             const txIds = slips[i].get("transactions") || [];
             for (let j = 0; j < txIds.length; j++) {
                 try {
-                    const t = txApp.findRecordById("transactions", txIds[j]);
-                    t.set("isClosed", false);
-                    txApp.save(t);
-                } catch (e) {
-                    // Ignore missing transaction
+                    const tx = txApp.findRecordById("transactions", txIds[j]);
+                    tx.set("isClosed", false);
+                    txApp.save(tx);
+                    txCount++;
+                } catch (err) {
+                    // transaction was deleted — skip
                 }
             }
         }
+
         txApp.delete(run);
     });
 
-    return e.json(200, { success: true });
+    return e.json(200, { success: true, slipsFound: slipCount, transactionsRestored: txCount });
 });
 EOF
 
