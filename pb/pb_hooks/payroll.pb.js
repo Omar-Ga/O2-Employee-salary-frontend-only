@@ -11,8 +11,10 @@ routerAdd("POST", "/api/payroll/close", (c) => {
 
         // Helper: Convert transaction unit to cash
         const toCash = (t, employee) => {
-            const hourlyRate = employee.getFloat("monthlySalary") / employee.getFloat("workHours");
-            const dailyRate = employee.getFloat("monthlySalary") / 30;
+            const monthlySalary = employee.getFloat("monthlySalary");
+            const workHours = employee.getFloat("workHours");
+            const hourlyRate = workHours > 0 ? monthlySalary / workHours : 0;
+            const dailyRate = monthlySalary / 30;
             const unit = t.getString("unit");
             const amount = t.getFloat("amount");
 
