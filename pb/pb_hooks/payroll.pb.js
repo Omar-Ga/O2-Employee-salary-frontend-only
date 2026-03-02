@@ -152,19 +152,12 @@ routerAdd("POST", "/api/payroll/close", (c) => {
 routerAdd("POST", "/api/payroll/revert", (c) => {
     const app = $app;
 
-    // --- DEBUG: Echo exactly what the server sees ---
-    const info = c.requestInfo();
-    const body = info.body;
+    // --- READ BODY ---
+    const body = c.requestInfo().body;
     const runId = body ? body["runId"] : null;
 
-    // Temporary debug: return what we received so we can diagnose
     if (!runId) {
-        return c.json(400, {
-            message: "runId is required.",
-            debug_body: JSON.stringify(body),
-            debug_bodyType: typeof body,
-            debug_keys: body ? Object.keys(body) : "body_is_null"
-        });
+        return c.json(400, { message: "runId is required." });
     }
 
     // --- FETCH & VALIDATE RUN ---
@@ -184,8 +177,15 @@ routerAdd("POST", "/api/payroll/revert", (c) => {
     }
 
     // --- ATOMIC REVERT ---
+    // Diagnostic counters
+    let slipsFound = 0;
+    let totalTxIdsFound = 0;
+    let transactionsRestored = 0;
+    let transactionsSkipped = 0;
+    const debugSlipDetails = [];
+
     app.runInTransaction((txApp) => {
-        // Fetch all slips for this run (parameterized to avoid injection)
+        // 1. Fetch all slips for this run
         const slips = txApp.findRecordsByFilter(
             "payroll_slips",
             "payrollRunId = {:runId}",
@@ -195,31 +195,63 @@ routerAdd("POST", "/api/payroll/revert", (c) => {
             { runId: runId }
         );
 
-        // For each slip, reopen all linked transactions and delete the slip
+        slipsFound = slips.length;
+
+        // 2. Collect ALL transaction IDs from all slips FIRST (before any deletes)
+        const allTxIds = [];
         for (let i = 0; i < slips.length; i++) {
             const slip = slips[i];
             if (!slip) continue;
 
-            // The 'transactions' field is a relation array of transaction IDs
-            const txIds = slip.get("transactions") || [];
+            // Try multiple ways to get the transaction IDs
+            const rawValue = slip.get("transactions");
+            const slipDebug = {
+                slipId: slip.id,
+                rawValueType: typeof rawValue,
+                rawValueStr: JSON.stringify(rawValue),
+                rawValueLength: rawValue ? rawValue.length : "null_or_undefined",
+            };
+            debugSlipDetails.push(slipDebug);
 
-            for (let j = 0; j < txIds.length; j++) {
-                try {
-                    const tx = txApp.findRecordById("transactions", txIds[j]);
-                    if (!tx) continue;
-                    tx.set("isClosed", false);
-                    txApp.save(tx);
-                } catch (e) {
-                    // Transaction may have been manually deleted — skip safely
+            // Handle whatever format the relation field returns
+            if (rawValue && rawValue.length > 0) {
+                for (let j = 0; j < rawValue.length; j++) {
+                    allTxIds.push(rawValue[j]);
                 }
             }
-
-            txApp.delete(slip);
         }
 
-        // Delete the parent payroll run record
+        totalTxIdsFound = allTxIds.length;
+
+        // 3. Reopen ALL transactions
+        for (let k = 0; k < allTxIds.length; k++) {
+            try {
+                const tx = txApp.findRecordById("transactions", allTxIds[k]);
+                if (tx) {
+                    tx.set("isClosed", false);
+                    txApp.save(tx);
+                    transactionsRestored++;
+                } else {
+                    transactionsSkipped++;
+                }
+            } catch (e) {
+                transactionsSkipped++;
+            }
+        }
+
+        // 4. Delete the run (cascade-deletes all slips automatically)
         txApp.delete(run);
     });
 
-    return c.json(200, { success: true, message: "Payroll run reverted successfully." });
+    return c.json(200, {
+        success: true,
+        message: "Payroll run reverted.",
+        diagnostics: {
+            slipsFound: slipsFound,
+            totalTxIdsFound: totalTxIdsFound,
+            transactionsRestored: transactionsRestored,
+            transactionsSkipped: transactionsSkipped,
+            slipDetails: debugSlipDetails,
+        }
+    });
 });
