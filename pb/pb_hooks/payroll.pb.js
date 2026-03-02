@@ -279,14 +279,28 @@ routerAdd("POST", "/api/payroll/restore", (e) => {
         slipCount = slips.length;
 
         for (let i = 0; i < slips.length; i++) {
-            const txIds = slips[i].getStringSlice("transactions") || [];
-            for (let j = 0; j < txIds.length; j++) {
+            // Robustly extract relation IDs (handles both JS array and Go slice)
+            let txIds = slips[i].get("transactions") || slips[i].getStringSlice("transactions");
+            if (!txIds) txIds = [];
+
+            // Ensure we have a standard loopable JS array
+            let ids = [];
+            try { ids = JSON.parse(JSON.stringify(txIds)); } catch (e) { ids = txIds; }
+            if (!Array.isArray(ids)) ids = [ids];
+
+            for (let j = 0; j < ids.length; j++) {
+                const id = ids[j];
+                if (!id) continue;
                 try {
-                    const tx = txApp.findRecordById("transactions", txIds[j]);
-                    tx.set("isClosed", false);
-                    txApp.save(tx);
-                    txCount++;
-                } catch (err) { }
+                    const tx = txApp.findRecordById("transactions", id);
+                    if (tx) {
+                        tx.set("isClosed", false);
+                        txApp.save(tx);
+                        txCount++;
+                    }
+                } catch (err) {
+                    console.error("Failed to restore transaction " + id + ": " + err);
+                }
             }
         }
         txApp.delete(run);
