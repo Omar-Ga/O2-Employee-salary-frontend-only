@@ -89,6 +89,40 @@ routerAdd("POST", "/api/payroll/close", (c) => {
     });
     return c.json(200, { success: true, runId: runId });
 });
+
+routerAdd("POST", "/api/payroll/restore", (c) => {
+    const body = $apis.requestInfo(c).body;
+    const runId = body.runId;
+    if (!runId) throw new BadRequestError("runId is required");
+
+    const app = $app;
+    app.runInTransaction((txApp) => {
+        const run = txApp.findRecordById("payroll_runs", runId);
+        const slips = txApp.findRecordsByFilter(
+            "payroll_slips",
+            `payrollRunId = "${runId}"`,
+            "",
+            10000,
+            0
+        );
+
+        for (let i = 0; i < slips.length; i++) {
+            const txIds = slips[i].get("transactions") || [];
+            for (let j = 0; j < txIds.length; j++) {
+                try {
+                    const t = txApp.findRecordById("transactions", txIds[j]);
+                    t.set("isClosed", false);
+                    txApp.save(t);
+                } catch (e) {
+                    // Ignore missing transaction
+                }
+            }
+        }
+        txApp.delete(run);
+    });
+
+    return c.json(200, { success: true });
+});
 EOF
 
 
