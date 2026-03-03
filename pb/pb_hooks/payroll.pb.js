@@ -192,86 +192,65 @@ routerAdd("POST", "/api/payroll/revert", (c) => {
         return c.json(400, { message: "This payroll run is older than 5 days and cannot be reverted." });
     }
 
-    // Get the period to find ALL runs for this period
-    const period = run.getString("period");
-
-    // --- ATOMIC REVERT (ALL RUNS FOR THIS PERIOD) ---
+    // --- ATOMIC REVERT (SINGLE RUN) ---
     let transactionsRestored = 0;
-    let runsDeleted = 0;
 
     app.runInTransaction((txApp) => {
-        // 1. Find ALL runs for this period (not just the requested one)
-        const allRuns = txApp.findRecordsByFilter(
-            "payroll_runs",
-            "period = {:period}",
+        // 1. Fetch all slips for this specific run
+        const slips = txApp.findRecordsByFilter(
+            "payroll_slips",
+            "payrollRunId = {:runId}",
             "",
             10000,
             0,
-            { period: period }
+            { runId: runId }
         );
 
-        // 2. For each run: collect transactions from slips, reopen them, delete the run
-        for (let r = 0; r < allRuns.length; r++) {
-            const currentRun = allRuns[r];
+        // 2. Collect ALL transaction IDs from all slips (before any deletes)
+        const allTxIds = [];
+        for (let i = 0; i < slips.length; i++) {
+            const slip = slips[i];
+            if (!slip) continue;
 
-            // Fetch all slips for this run
-            const slips = txApp.findRecordsByFilter(
-                "payroll_slips",
-                "payrollRunId = {:runId}",
-                "",
-                10000,
-                0,
-                { runId: currentRun.id }
-            );
+            const rawValue = slip.get("transactions");
 
-            // Collect ALL transaction IDs from all slips
-            const allTxIds = [];
-            for (let i = 0; i < slips.length; i++) {
-                const slip = slips[i];
-                if (!slip) continue;
-
-                const rawValue = slip.get("transactions");
-
-                // CRITICAL: PocketBase Goja returns a string for single-value relations
-                // and an array for multi-value relations. Normalize to always be an array.
-                let txIds = [];
-                if (typeof rawValue === "string" && rawValue.length > 0) {
-                    txIds = [rawValue];
-                } else if (rawValue && typeof rawValue === "object" && rawValue.length > 0) {
-                    for (let j = 0; j < rawValue.length; j++) {
-                        txIds.push(rawValue[j]);
-                    }
-                }
-
-                for (let j = 0; j < txIds.length; j++) {
-                    allTxIds.push(txIds[j]);
+            // CRITICAL: PocketBase Goja returns a string for single-value relations
+            // and an array for multi-value relations. Normalize to always be an array.
+            let txIds = [];
+            if (typeof rawValue === "string" && rawValue.length > 0) {
+                txIds = [rawValue];
+            } else if (rawValue && typeof rawValue === "object" && rawValue.length > 0) {
+                for (let j = 0; j < rawValue.length; j++) {
+                    txIds.push(rawValue[j]);
                 }
             }
 
-            // Reopen ALL transactions for this run
-            for (let k = 0; k < allTxIds.length; k++) {
-                try {
-                    const tx = txApp.findRecordById("transactions", allTxIds[k]);
-                    if (tx) {
-                        tx.set("isClosed", false);
-                        txApp.save(tx);
-                        transactionsRestored++;
-                    }
-                } catch (e) {
-                    // Transaction may have been manually deleted — skip safely
-                }
+            for (let j = 0; j < txIds.length; j++) {
+                allTxIds.push(txIds[j]);
             }
-
-            // Delete this run (cascade-deletes all its slips)
-            txApp.delete(currentRun);
-            runsDeleted++;
         }
+
+        // 3. Reopen ALL transactions for this run
+        for (let k = 0; k < allTxIds.length; k++) {
+            try {
+                const tx = txApp.findRecordById("transactions", allTxIds[k]);
+                if (tx) {
+                    tx.set("isClosed", false);
+                    txApp.save(tx);
+                    transactionsRestored++;
+                }
+            } catch (e) {
+                // Transaction may have been manually deleted — skip safely
+            }
+        }
+
+        // 4. Delete this run (cascade-deletes all its slips)
+        txApp.delete(run);
     });
 
     return c.json(200, {
         success: true,
-        message: "All payroll runs for period " + period + " reverted.",
-        transactionsRestored: transactionsRestored,
-        runsDeleted: runsDeleted
+        message: "Payroll run reverted.",
+        transactionsRestored: transactionsRestored
     });
 });
