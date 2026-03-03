@@ -73,8 +73,8 @@ export const payrollService = {
     }
   },
 
-  closeMonth: async () => {
-    return await pb.send('/api/payroll/close', { method: 'POST' })
+  closeMonth: async (period: string) => {
+    return await pb.send('/api/payroll/close', { method: 'POST', body: { period } })
   },
 
   getRuns: async (page = 1, perPage = 10): Promise<ListResult<PayrollRun>> => {
@@ -137,5 +137,9 @@ export const payrollService = {
 
   revertRun: async (runId: string): Promise<void> => {
     return await pb.send('/api/payroll/revert', { method: 'POST', body: { runId } })
+  },
+
+  deleteRun: async (runId: string): Promise<void> => {
+    return await pb.send('/api/payroll/delete', { method: 'POST', body: { runId } })
   },
 }

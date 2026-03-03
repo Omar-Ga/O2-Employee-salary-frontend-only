@@ -1,10 +1,10 @@
-import { Box, Button, Dialog, HStack, Heading, Badge, Text, Tabs, Stack, Icon, Spinner, Center } from "@chakra-ui/react"
+import { Box, Button, Dialog, HStack, Heading, Badge, Text, Tabs, Stack, Icon, Spinner, Center, NativeSelect } from "@chakra-ui/react"
 import { useTranslation } from "react-i18next"
 import { employeeService } from "@/services/employee.service"
 import { useQuery, useMutation, useQueryClient } from "@tanstack/react-query"
 import { payrollService } from "@/services/payroll.service"
 import { transactionService } from "@/services/transaction.service"
-import { LuWallet, LuHistory, LuCheck, LuTrendingUp, LuBanknote, LuPrinter } from "react-icons/lu"
+import { LuWallet, LuHistory, LuCheck, LuTrendingUp, LuBanknote, LuPrinter, LuTrash2 } from "react-icons/lu"
 import { formatCurrency } from "@/lib/utils"
 import { useState, useMemo, useRef } from "react"
 import { useReactToPrint } from "react-to-print"
@@ -73,20 +73,35 @@ const PayrollRunView = () => {
 
   const { departments: departmentConfig } = useDepartments()
 
-  const [selectedEmp, setSelectedEmp] = useState<string | null>(null) // For Add Transaction Dialog
+  const [selectedEmp, setSelectedEmp] = useState<string | null>(null)
   const [isTxDrawerOpen, setIsTxDrawerOpen] = useState(false)
   const queryClient = useQueryClient()
 
+  const [isCloseDialogOpen, setIsCloseDialogOpen] = useState(false)
+  const [selectedPeriod, setSelectedPeriod] = useState(() => {
+    const now = new Date()
+    const month = String(now.getMonth() + 1).padStart(2, '0')
+    return `${now.getFullYear()}-${month}`
+  })
+
+  const currentYear = new Date().getFullYear()
+  const monthOptions = Array.from({ length: 12 }, (_, i) => {
+    const m = String(i + 1).padStart(2, '0')
+    return { value: `${currentYear}-${m}`, label: t(`months.${m}`) }
+  })
+
   const closeMonthMutation = useMutation({
-    mutationFn: () => payrollService.closeMonth(),
+    mutationFn: () => payrollService.closeMonth(selectedPeriod),
     onSuccess: () => {
       queryClient.invalidateQueries({ queryKey: ['transactions'] })
       queryClient.invalidateQueries({ queryKey: ['payroll_runs'] })
       queryClient.invalidateQueries({ queryKey: ['lastClosedPayroll'] })
       queryClient.invalidateQueries({ queryKey: ['payrollStats'] })
+      setIsCloseDialogOpen(false)
       toaster.create({ title: t('run.toast.monthClosed'), type: "success" })
     },
     onError: (error: Error) => {
+      setIsCloseDialogOpen(false)
       toaster.create({ title: "Failed to close month", description: error.message, type: "error" })
     }
   })
@@ -146,9 +161,49 @@ const PayrollRunView = () => {
         </HStack>
 
         <Box display="flex" alignItems="flex-end">
-          <Button colorPalette="oxygen" onClick={handleCloseMonth} loading={closeMonthMutation.isPending} size="lg">
+          <Button colorPalette="oxygen" onClick={() => setIsCloseDialogOpen(true)} size="lg">
             <LuCheck /> {t('run.closeMonth')}
           </Button>
+
+          <Dialog.Root
+            open={isCloseDialogOpen}
+            onOpenChange={(e) => setIsCloseDialogOpen(e.open)}
+          >
+            <Dialog.Backdrop />
+            <Dialog.Positioner>
+              <Dialog.Content>
+                <Dialog.Header>
+                  <Dialog.Title>{t('run.closeDialog.title')}</Dialog.Title>
+                </Dialog.Header>
+                <Dialog.Body>
+                  <Text mb="4">{t('run.closeDialog.selectMonth')}</Text>
+                  <NativeSelect.Root size="lg">
+                    <NativeSelect.Field
+                      value={selectedPeriod}
+                      onChange={(e) => setSelectedPeriod(e.target.value)}
+                    >
+                      {monthOptions.map(opt => (
+                        <option key={opt.value} value={opt.value}>{opt.label}</option>
+                      ))}
+                    </NativeSelect.Field>
+                    <NativeSelect.Indicator />
+                  </NativeSelect.Root>
+                </Dialog.Body>
+                <Dialog.Footer>
+                  <Button variant="outline" onClick={() => setIsCloseDialogOpen(false)}>
+                    {t('run.closeDialog.cancel')}
+                  </Button>
+                  <Button
+                    colorPalette="oxygen"
+                    loading={closeMonthMutation.isPending}
+                    onClick={handleCloseMonth}
+                  >
+                    {t('run.closeDialog.confirm')}
+                  </Button>
+                </Dialog.Footer>
+              </Dialog.Content>
+            </Dialog.Positioner>
+          </Dialog.Root>
         </Box>
       </HStack>
 
@@ -186,7 +241,6 @@ const PayrollRunView = () => {
         onOpenChange={setIsTxDrawerOpen}
         employeeIds={selectedEmp ? [selectedEmp] : []}
         onSuccess={() => {
-          // Invalidate stats and transactions
           queryClient.invalidateQueries({ queryKey: ['payrollStats'] })
           queryClient.invalidateQueries({ queryKey: ['transactions'] })
         }}
@@ -236,11 +290,11 @@ const PayrollHistoryView = () => {
     [history, selectedRunId]
   )
 
-  // Determine if the selected run is within the 5-day revert window
+  // Determine if the selected run is within the 10-day revert/delete window
   const isRevertEligible = useMemo(() => {
     if (!selectedRun) return false
     const diffMs = new Date().getTime() - new Date(selectedRun.created).getTime()
-    return diffMs <= 5 * 24 * 60 * 60 * 1000
+    return diffMs <= 10 * 24 * 60 * 60 * 1000
   }, [selectedRun])
 
   const revertMutation = useMutation({
@@ -257,6 +311,25 @@ const PayrollHistoryView = () => {
     onError: (error: Error) => {
       setIsRevertDialogOpen(false)
       toaster.create({ title: t('history.toast.revertError'), description: error.message, type: 'error' })
+    },
+  })
+
+  const [isDeleteDialogOpen, setIsDeleteDialogOpen] = useState(false)
+
+  const deleteMutation = useMutation({
+    mutationFn: (runId: string) => payrollService.deleteRun(runId),
+    onSuccess: () => {
+      queryClient.invalidateQueries({ queryKey: ['payrollStats'] })
+      queryClient.invalidateQueries({ queryKey: ['transactions'] })
+      queryClient.invalidateQueries({ queryKey: ['run_slips'] })
+      queryClient.invalidateQueries({ queryKey: ['payroll_runs'] })
+      setIsDeleteDialogOpen(false)
+      setSelectedRunId(null)
+      toaster.create({ title: t('history.toast.deleted'), type: 'success' })
+    },
+    onError: (error: Error) => {
+      setIsDeleteDialogOpen(false)
+      toaster.create({ title: t('history.toast.deleteError'), description: error.message, type: 'error' })
     },
   })
 
@@ -330,6 +403,47 @@ const PayrollHistoryView = () => {
                           onClick={() => revertMutation.mutate(selectedRunId!)}
                         >
                           {t('history.revertDialog.confirm')}
+                        </Button>
+                      </Dialog.Footer>
+                    </Dialog.Content>
+                  </Dialog.Positioner>
+                </Dialog.Root>
+              </>
+            )}
+            {isRevertEligible && (
+              <>
+                <Button
+                  colorPalette="red"
+                  size="sm"
+                  onClick={() => setIsDeleteDialogOpen(true)}
+                >
+                  <LuTrash2 /> {t('history.deletePayroll')}
+                </Button>
+
+                <Dialog.Root
+                  open={isDeleteDialogOpen}
+                  onOpenChange={(e) => setIsDeleteDialogOpen(e.open)}
+                  role="alertdialog"
+                >
+                  <Dialog.Backdrop />
+                  <Dialog.Positioner>
+                    <Dialog.Content>
+                      <Dialog.Header>
+                        <Dialog.Title>{t('history.deleteDialog.title')}</Dialog.Title>
+                      </Dialog.Header>
+                      <Dialog.Body>
+                        <Text>{t('history.deleteDialog.description', { period: selectedRun.period })}</Text>
+                      </Dialog.Body>
+                      <Dialog.Footer>
+                        <Button variant="outline" onClick={() => setIsDeleteDialogOpen(false)}>
+                          {t('history.deleteDialog.cancel')}
+                        </Button>
+                        <Button
+                          colorPalette="red"
+                          loading={deleteMutation.isPending}
+                          onClick={() => deleteMutation.mutate(selectedRunId!)}
+                        >
+                          {t('history.deleteDialog.confirm')}
                         </Button>
                       </Dialog.Footer>
                     </Dialog.Content>

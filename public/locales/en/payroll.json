@@ -22,6 +22,12 @@
     "toast": {
       "monthClosed": "Month Closed & Slips Generated",
       "transactionAdded": "Transaction added"
+    },
+    "closeDialog": {
+      "title": "Close Payroll",
+      "selectMonth": "Select the month to close",
+      "confirm": "Close Month",
+      "cancel": "Cancel"
     }
   },
   "history": {
@@ -40,7 +46,16 @@
     },
     "toast": {
       "reverted": "Payroll run reverted successfully.",
-      "revertError": "Failed to revert payroll run."
+      "revertError": "Failed to revert payroll run.",
+      "deleted": "Payroll run permanently deleted.",
+      "deleteError": "Failed to delete payroll run."
+    },
+    "deletePayroll": "Delete Payroll",
+    "deleteDialog": {
+      "title": "Delete Payroll Run?",
+      "description": "This will permanently delete the payroll run for {{period}} and all associated transactions. Nothing will be restored. This action cannot be undone.",
+      "confirm": "Delete Permanently",
+      "cancel": "Cancel"
     }
   },
   "dialog": {
@@ -132,5 +147,19 @@
     "subtotal": "Subtotal",
     "parentTotal": "Department Total",
     "grandTotal": "Grand Total"
+  },
+  "months": {
+    "01": "January",
+    "02": "February",
+    "03": "March",
+    "04": "April",
+    "05": "May",
+    "06": "June",
+    "07": "July",
+    "08": "August",
+    "09": "September",
+    "10": "October",
+    "11": "November",
+    "12": "December"
   }
 }

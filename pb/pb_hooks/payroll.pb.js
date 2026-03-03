@@ -5,15 +5,23 @@ routerAdd("POST", "/api/payroll/close", (c) => {
     const app = $app;
     let runId;
 
+    // --- READ BODY ---
+    const body = c.requestInfo().body;
+    const period = body ? body["period"] : null;
+
+    // Validate period format (YYYY-MM)
+    if (!period || !/^\d{4}-\d{2}$/.test(period)) {
+        return c.json(400, { message: "Valid period (YYYY-MM) is required." });
+    }
+
     // GUARD: Block duplicate closes for the same period
-    const currentMonth = new Date().toISOString().slice(0, 7);
     const existingRuns = app.findRecordsByFilter(
         "payroll_runs",
         "period = {:period} && isClosed = true",
         "",
         1,
         0,
-        { period: currentMonth }
+        { period: period }
     );
     if (existingRuns.length > 0) {
         return c.json(400, {
@@ -37,8 +45,6 @@ routerAdd("POST", "/api/payroll/close", (c) => {
             if (unit === 'days') return amount * dailyRate;
             return 0;
         };
-
-        const currentMonth = new Date().toISOString().slice(0, 7); // yyyy-MM
 
         // --- FETCH DATA ---
 
@@ -80,7 +86,7 @@ routerAdd("POST", "/api/payroll/close", (c) => {
         // 1. Create Payroll Run
         const payrollRunsCollection = app.findCollectionByNameOrId("payroll_runs");
         const run = new Record(payrollRunsCollection);
-        run.set("period", currentMonth);
+        run.set("period", period);
         run.set("date", new Date().toISOString());
         run.set("isClosed", true);
         txApp.save(run);
@@ -184,12 +190,12 @@ routerAdd("POST", "/api/payroll/revert", (c) => {
         return c.json(404, { message: "Payroll run not found." });
     }
 
-    // Enforce 5-day revert window (based on the requested run)
+    // Enforce 10-day revert window (based on the requested run)
     const createdDate = new Date(run.getString("created"));
     const now = new Date();
     const diffDays = (now.getTime() - createdDate.getTime()) / (1000 * 60 * 60 * 24);
-    if (diffDays > 5) {
-        return c.json(400, { message: "This payroll run is older than 5 days and cannot be reverted." });
+    if (diffDays > 10) {
+        return c.json(400, { message: "This payroll run is older than 10 days and cannot be reverted." });
     }
 
     // --- ATOMIC REVERT (SINGLE RUN) ---
@@ -252,5 +258,92 @@ routerAdd("POST", "/api/payroll/revert", (c) => {
         success: true,
         message: "Payroll run reverted.",
         transactionsRestored: transactionsRestored
+    });
+});
+
+routerAdd("POST", "/api/payroll/delete", (c) => {
+    const app = $app;
+
+    // --- READ BODY ---
+    const body = c.requestInfo().body;
+    const runId = body ? body["runId"] : null;
+
+    if (!runId) {
+        return c.json(400, { message: "runId is required." });
+    }
+
+    // --- FETCH & VALIDATE RUN ---
+    let run;
+    try {
+        run = app.findRecordById("payroll_runs", runId);
+    } catch (e) {
+        return c.json(404, { message: "Payroll run not found." });
+    }
+
+    // Enforce 10-day delete window
+    const createdDate = new Date(run.getString("created"));
+    const now = new Date();
+    const diffDays = (now.getTime() - createdDate.getTime()) / (1000 * 60 * 60 * 24);
+    if (diffDays > 10) {
+        return c.json(400, { message: "This payroll run is older than 10 days and cannot be deleted." });
+    }
+
+    // --- ATOMIC DELETE (PERMANENT) ---
+    let transactionsDeleted = 0;
+
+    app.runInTransaction((txApp) => {
+        // 1. Fetch all slips for this run
+        const slips = txApp.findRecordsByFilter(
+            "payroll_slips",
+            "payrollRunId = {:runId}",
+            "",
+            10000,
+            0,
+            { runId: runId }
+        );
+
+        // 2. Collect ALL transaction IDs from all slips
+        const allTxIds = [];
+        for (let i = 0; i < slips.length; i++) {
+            const slip = slips[i];
+            if (!slip) continue;
+
+            const rawValue = slip.get("transactions");
+
+            let txIds = [];
+            if (typeof rawValue === "string" && rawValue.length > 0) {
+                txIds = [rawValue];
+            } else if (rawValue && typeof rawValue === "object" && rawValue.length > 0) {
+                for (let j = 0; j < rawValue.length; j++) {
+                    txIds.push(rawValue[j]);
+                }
+            }
+
+            for (let j = 0; j < txIds.length; j++) {
+                allTxIds.push(txIds[j]);
+            }
+        }
+
+        // 3. PERMANENTLY DELETE all transactions (not reopen — destroy)
+        for (let k = 0; k < allTxIds.length; k++) {
+            try {
+                const tx = txApp.findRecordById("transactions", allTxIds[k]);
+                if (tx) {
+                    txApp.delete(tx);
+                    transactionsDeleted++;
+                }
+            } catch (e) {
+                // Transaction may have been manually deleted — skip safely
+            }
+        }
+
+        // 4. Delete this run (cascade-deletes all its slips)
+        txApp.delete(run);
+    });
+
+    return c.json(200, {
+        success: true,
+        message: "Payroll run permanently deleted.",
+        transactionsDeleted: transactionsDeleted
     });
 });
