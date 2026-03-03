@@ -5,6 +5,22 @@ routerAdd("POST", "/api/payroll/close", (c) => {
     const app = $app;
     let runId;
 
+    // GUARD: Block duplicate closes for the same period
+    const currentMonth = new Date().toISOString().slice(0, 7);
+    const existingRuns = app.findRecordsByFilter(
+        "payroll_runs",
+        "period = {:period} && isClosed = true",
+        "",
+        1,
+        0,
+        { period: currentMonth }
+    );
+    if (existingRuns.length > 0) {
+        return c.json(400, {
+            message: "A closed payroll run already exists for this period. Revert it first."
+        });
+    }
+
     // Wrap everything in a transaction for atomicity
     app.runInTransaction((txApp) => {
         // --- PREPARATION ---
@@ -168,7 +184,7 @@ routerAdd("POST", "/api/payroll/revert", (c) => {
         return c.json(404, { message: "Payroll run not found." });
     }
 
-    // Enforce 5-day revert window
+    // Enforce 5-day revert window (based on the requested run)
     const createdDate = new Date(run.getString("created"));
     const now = new Date();
     const diffDays = (now.getTime() - createdDate.getTime()) / (1000 * 60 * 60 * 24);
@@ -176,65 +192,86 @@ routerAdd("POST", "/api/payroll/revert", (c) => {
         return c.json(400, { message: "This payroll run is older than 5 days and cannot be reverted." });
     }
 
-    // --- ATOMIC REVERT ---
+    // Get the period to find ALL runs for this period
+    const period = run.getString("period");
+
+    // --- ATOMIC REVERT (ALL RUNS FOR THIS PERIOD) ---
     let transactionsRestored = 0;
+    let runsDeleted = 0;
 
     app.runInTransaction((txApp) => {
-        // 1. Fetch all slips for this run
-        const slips = txApp.findRecordsByFilter(
-            "payroll_slips",
-            "payrollRunId = {:runId}",
+        // 1. Find ALL runs for this period (not just the requested one)
+        const allRuns = txApp.findRecordsByFilter(
+            "payroll_runs",
+            "period = {:period}",
             "",
             10000,
             0,
-            { runId: runId }
+            { period: period }
         );
 
-        // 2. Collect ALL transaction IDs from all slips (before any deletes)
-        const allTxIds = [];
-        for (let i = 0; i < slips.length; i++) {
-            const slip = slips[i];
-            if (!slip) continue;
+        // 2. For each run: collect transactions from slips, reopen them, delete the run
+        for (let r = 0; r < allRuns.length; r++) {
+            const currentRun = allRuns[r];
 
-            const rawValue = slip.get("transactions");
+            // Fetch all slips for this run
+            const slips = txApp.findRecordsByFilter(
+                "payroll_slips",
+                "payrollRunId = {:runId}",
+                "",
+                10000,
+                0,
+                { runId: currentRun.id }
+            );
 
-            // CRITICAL: PocketBase Goja returns a string for single-value relations
-            // and an array for multi-value relations. Normalize to always be an array.
-            let txIds = [];
-            if (typeof rawValue === "string" && rawValue.length > 0) {
-                txIds = [rawValue];
-            } else if (rawValue && typeof rawValue === "object" && rawValue.length > 0) {
-                for (let j = 0; j < rawValue.length; j++) {
-                    txIds.push(rawValue[j]);
+            // Collect ALL transaction IDs from all slips
+            const allTxIds = [];
+            for (let i = 0; i < slips.length; i++) {
+                const slip = slips[i];
+                if (!slip) continue;
+
+                const rawValue = slip.get("transactions");
+
+                // CRITICAL: PocketBase Goja returns a string for single-value relations
+                // and an array for multi-value relations. Normalize to always be an array.
+                let txIds = [];
+                if (typeof rawValue === "string" && rawValue.length > 0) {
+                    txIds = [rawValue];
+                } else if (rawValue && typeof rawValue === "object" && rawValue.length > 0) {
+                    for (let j = 0; j < rawValue.length; j++) {
+                        txIds.push(rawValue[j]);
+                    }
+                }
+
+                for (let j = 0; j < txIds.length; j++) {
+                    allTxIds.push(txIds[j]);
                 }
             }
 
-            for (let j = 0; j < txIds.length; j++) {
-                allTxIds.push(txIds[j]);
-            }
-        }
-
-        // 3. Reopen ALL transactions
-        for (let k = 0; k < allTxIds.length; k++) {
-            try {
-                const tx = txApp.findRecordById("transactions", allTxIds[k]);
-                if (tx) {
-                    tx.set("isClosed", false);
-                    txApp.save(tx);
-                    transactionsRestored++;
+            // Reopen ALL transactions for this run
+            for (let k = 0; k < allTxIds.length; k++) {
+                try {
+                    const tx = txApp.findRecordById("transactions", allTxIds[k]);
+                    if (tx) {
+                        tx.set("isClosed", false);
+                        txApp.save(tx);
+                        transactionsRestored++;
+                    }
+                } catch (e) {
+                    // Transaction may have been manually deleted — skip safely
                 }
-            } catch (e) {
-                // Transaction may have been manually deleted — skip safely
             }
-        }
 
-        // 4. Delete the run (cascade-deletes all slips automatically)
-        txApp.delete(run);
+            // Delete this run (cascade-deletes all its slips)
+            txApp.delete(currentRun);
+            runsDeleted++;
+        }
     });
 
     return c.json(200, {
         success: true,
-        message: "Payroll run reverted.",
-        transactionsRestored: transactionsRestored
+        message: "All payroll runs for period " + period + " reverted.",
+        transactionsRestored: transactionsRestored,
+        runsDeleted: runsDeleted
     });
 });
