@@ -1,6 +1,6 @@
 {
   "welcome": "Employee Management",
-  "subtitle": "Manage your team, salaries, and performance.",
+  "subtitle": "Manage your team, payroll, and performance.",
   "stats": {
     "totalPayroll": "Total Payroll",
     "sinceLast": "{{value}}% since last payout",
