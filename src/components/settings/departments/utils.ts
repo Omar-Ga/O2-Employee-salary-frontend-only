@@ -1,7 +1,7 @@
-import { DepartmentsResponse } from "@/types/pocketbase-types"
+import { Department } from "@/types"
 import { DepartmentNode } from "./types"
 
-export function flatRecordsToTree(records: DepartmentsResponse[]): DepartmentNode[] {
+export function flatRecordsToTree(records: Department[]): DepartmentNode[] {
     const nodeMap = new Map<string, DepartmentNode>()
     const rootNodes: DepartmentNode[] = []
 
@@ -10,7 +10,7 @@ export function flatRecordsToTree(records: DepartmentsResponse[]): DepartmentNod
         nodeMap.set(record.id, {
             id: record.id,
             name: record.name,
-            type: record.type,
+            type: record.type as 'structural' | 'functional',
             children: []
         })
     }

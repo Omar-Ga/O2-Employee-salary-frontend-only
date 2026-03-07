@@ -32,8 +32,8 @@ export const DepartmentPayrollGroup = ({
             const empTx = transactions.filter(tx => tx.employeeId === emp.id)
             const slip = payrollService.calculateSlip(emp, empTx)
             return {
-                basic: acc.basic + slip.basicSalary,
-                net: acc.net + slip.netSalary,
+                basic: acc.basic + (slip.basicSalary || 0),
+                net: acc.net + (slip.netSalary || 0),
             }
         },
         { basic: 0, net: 0 }
@@ -49,8 +49,8 @@ export const DepartmentPayrollGroup = ({
                     const empTx = transactions.filter(tx => tx.employeeId === emp.id)
                     const slip = payrollService.calculateSlip(emp, empTx)
                     return {
-                        basic: acc.basic + slip.basicSalary,
-                        net: acc.net + slip.netSalary,
+                        basic: acc.basic + (slip.basicSalary || 0),
+                        net: acc.net + (slip.netSalary || 0),
                     }
                 },
                 { basic: 0, net: 0 }
@@ -66,8 +66,8 @@ export const DepartmentPayrollGroup = ({
                 const empTx = transactions.filter(tx => tx.employeeId === emp.id)
                 const slip = payrollService.calculateSlip(emp, empTx)
                 return {
-                    basic: acc.basic + slip.basicSalary,
-                    net: acc.net + slip.netSalary,
+                    basic: acc.basic + (slip.basicSalary || 0),
+                    net: acc.net + (slip.netSalary || 0),
                 }
             },
             { basic: 0, net: 0 }
@@ -166,17 +166,17 @@ export const DepartmentPayrollGroup = ({
                                     {group.employees.map(emp => {
                                         const empTx = transactions.filter(t => t.employeeId === emp.id)
                                         const slip = payrollService.calculateSlip(emp, empTx)
-                                        const additions = slip.overtimeAmount + slip.bonusAmount
-                                        const deductions = slip.deductionAmount + slip.advanceAmount
+                                        const additions = (slip.overtimeAmount || 0) + (slip.bonusAmount || 0)
+                                        const deductions = (slip.deductionAmount || 0) + (slip.advanceAmount || 0)
                                         return (
                                             <PayrollEmployeeCard
                                                 key={emp.id}
                                                 name={emp.name}
                                                 jobTitle={emp.jobTitle}
-                                                basicSalary={slip.basicSalary}
+                                                basicSalary={slip.basicSalary || 0}
                                                 additions={additions}
                                                 deductions={deductions}
-                                                netSalary={slip.netSalary}
+                                                netSalary={slip.netSalary || 0}
                                                 onManage={() => onManage(emp.id)}
                                             />
                                         )

@@ -24,8 +24,8 @@ export const HistoricalDepartmentPayrollGroup = ({
     // Calculate parent department totals from historical slips
     const parentTotals = slips.reduce(
         (acc, slip) => ({
-            basic: acc.basic + slip.basicSalary,
-            net: acc.net + slip.netSalary,
+            basic: acc.basic + (slip.basicSalary || 0),
+            net: acc.net + (slip.netSalary || 0),
         }),
         { basic: 0, net: 0 }
     )
@@ -37,8 +37,8 @@ export const HistoricalDepartmentPayrollGroup = ({
         if (subSlips.length > 0) {
             const subTotals = subSlips.reduce(
                 (acc, s) => ({
-                    basic: acc.basic + s.basicSalary,
-                    net: acc.net + s.netSalary,
+                    basic: acc.basic + (s.basicSalary || 0),
+                    net: acc.net + (s.netSalary || 0),
                 }),
                 { basic: 0, net: 0 }
             )
@@ -50,8 +50,8 @@ export const HistoricalDepartmentPayrollGroup = ({
     if (otherSlips.length > 0) {
         const otherTotals = otherSlips.reduce(
             (acc, s) => ({
-                basic: acc.basic + s.basicSalary,
-                net: acc.net + s.netSalary,
+                basic: acc.basic + (s.basicSalary || 0),
+                net: acc.net + (s.netSalary || 0),
             }),
             { basic: 0, net: 0 }
         )
@@ -143,17 +143,17 @@ export const HistoricalDepartmentPayrollGroup = ({
 
                                 <Stack gap="2" p="3" bg="gray.50/50">
                                     {group.slips.map(slip => {
-                                        const additions = slip.overtimeAmount + slip.bonusAmount
-                                        const deductions = slip.deductionAmount + slip.advanceAmount
+                                        const additions = (slip.overtimeAmount || 0) + (slip.bonusAmount || 0)
+                                        const deductions = (slip.deductionAmount || 0) + (slip.advanceAmount || 0)
                                         return (
                                             <PayrollEmployeeCard
                                                 key={slip.id}
                                                 name={slip.employeeName || '---'}
                                                 jobTitle={slip.employeeJobTitle || '---'}
-                                                basicSalary={slip.basicSalary}
+                                                basicSalary={slip.basicSalary || 0}
                                                 additions={additions}
                                                 deductions={deductions}
-                                                netSalary={slip.netSalary}
+                                                netSalary={slip.netSalary || 0}
                                                 isHistorical
                                             />
                                         )

@@ -39,8 +39,15 @@ import {
   LuTrash2,
 } from "react-icons/lu"
 import { TransactionCategory, Transaction } from "@/types"
-import { TransactionsCategoryOptions } from "@/types/pocketbase-types"
 import { formatCurrency, getCurrencySymbol } from "@/lib/utils"
+
+const TransactionsCategoryOptions = {
+  overtime: 'overtime',
+  deduction: 'deduction',
+  bonus: 'bonus',
+  advance: 'advance',
+} as const;
+type TransactionsCategoryOptions = typeof TransactionsCategoryOptions[keyof typeof TransactionsCategoryOptions];
 import { SegmentGroup, IconButton } from "@chakra-ui/react"
 import type { IconType } from "react-icons"
 
@@ -278,10 +285,10 @@ export const TransactionDrawer = ({ open, onOpenChange, employeeIds, onSuccess }
                     <Heading size="xs" color="gray.500" textTransform="uppercase" letterSpacing="widest">
                       {t('preview.projectedNet')}
                     </Heading>
-                    {projectedSlip && projectedSlip.netSalary > singleEmployee!.monthlySalary && (
+                    {projectedSlip && (projectedSlip.netSalary || 0) > singleEmployee!.monthlySalary && (
                       <Icon as={LuTrendingUp} color="green.500" />
                     )}
-                    {projectedSlip && projectedSlip.netSalary < singleEmployee!.monthlySalary && (
+                    {projectedSlip && (projectedSlip.netSalary || 0) < singleEmployee!.monthlySalary && (
                       <Icon as={LuTrendingDown} color="red.500" />
                     )}
                   </HStack>
@@ -296,7 +303,7 @@ export const TransactionDrawer = ({ open, onOpenChange, employeeIds, onSuccess }
                     overflow="hidden"
                   >
                     <Text fontSize="3xl" fontWeight="black" color="oxygen.700" mb="2">
-                      {projectedSlip ? formatCurrency(projectedSlip.netSalary) : "---"}
+                      {projectedSlip ? formatCurrency(projectedSlip.netSalary || 0) : "---"}
                     </Text>
                     <Text fontSize="xs" color="oxygen.600" fontWeight="bold" mt="1">{t('preview.afterDeductions')}</Text>
                     <Box position="absolute" top="-2" right="-2" opacity="0.1">
@@ -309,11 +316,11 @@ export const TransactionDrawer = ({ open, onOpenChange, employeeIds, onSuccess }
                   <Stack gap="2">
                     <HStack justify="space-between" fontSize="sm">
                       <Text color="gray.500">{t('preview.totalAdditions')}</Text>
-                      <Text color="green.600" fontWeight="bold">+{formatCurrency(projectedSlip.overtimeAmount + projectedSlip.bonusAmount)}</Text>
+                      <Text color="green.600" fontWeight="bold">+{formatCurrency((projectedSlip.overtimeAmount || 0) + (projectedSlip.bonusAmount || 0))}</Text>
                     </HStack>
                     <HStack justify="space-between" fontSize="sm">
                       <Text color="gray.500">{t('preview.totalDeductions')}</Text>
-                      <Text color="red.600" fontWeight="bold">-{formatCurrency(projectedSlip.deductionAmount + projectedSlip.advanceAmount)}</Text>
+                      <Text color="red.600" fontWeight="bold">-{formatCurrency((projectedSlip.deductionAmount || 0) + (projectedSlip.advanceAmount || 0))}</Text>
                     </HStack>
                     <Separator />
                     <HStack justify="space-between" fontSize="sm" fontWeight="bold">

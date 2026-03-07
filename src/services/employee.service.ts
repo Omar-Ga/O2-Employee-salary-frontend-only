@@ -1,55 +1,48 @@
-import { pb } from '@/lib/pocketbase'
-import { Collections } from '@/types/pocketbase-types'
 import { Employee } from '@/types'
-import { EmployeesRecord } from '@/types/pocketbase-types'
-import type { ListResult } from 'pocketbase'
 
-// Map PocketBase response to UI Employee type if needed, or use directly
-// For now, we will use the generated types directly in the app to avoid mapping overhead
+// Mock ListResult since we removed pocketbase package
+interface ListResult<T> {
+  page: number;
+  perPage: number;
+  totalItems: number;
+  totalPages: number;
+  items: T[];
+}
+
+const emptyList = {
+  page: 1,
+  perPage: 50,
+  totalItems: 0,
+  totalPages: 0,
+  items: []
+}
 
 export const employeeService = {
-  getAll: async (page = 1, perPage = 50): Promise<ListResult<Employee>> => {
-    return await pb.collection(Collections.Employees).getList(page, perPage, {
-      sort: '-created',
-      expand: 'department',
-    })
+  getAll: async (_page = 1, _perPage = 50): Promise<ListResult<Employee>> => {
+    return Promise.resolve(emptyList)
   },
 
-  getActive: async (page = 1, perPage = 50): Promise<ListResult<Employee>> => {
-    return await pb.collection(Collections.Employees).getList(page, perPage, {
-      sort: '-created',
-      expand: 'department',
-      filter: 'isArchived = false'
-    })
+  getActive: async (_page = 1, _perPage = 50): Promise<ListResult<Employee>> => {
+    return Promise.resolve(emptyList)
   },
 
   getAllActive: async (): Promise<Employee[]> => {
-    return await pb.collection(Collections.Employees).getFullList({
-      sort: '-created',
-      expand: 'department',
-      filter: 'isArchived = false'
-    })
+    return Promise.resolve([])
   },
 
-  create: async (data: Partial<EmployeesRecord>): Promise<Employee> => {
-    return await pb.collection(Collections.Employees).create(data)
+  create: async (data: Partial<Employee>): Promise<Employee> => {
+    return Promise.resolve({ id: 'dummy-id', ...data } as Employee)
   },
 
-  update: async (id: string, data: Partial<EmployeesRecord>): Promise<Employee> => {
-    return await pb.collection(Collections.Employees).update(id, data)
+  update: async (id: string, data: Partial<Employee>): Promise<Employee> => {
+    return Promise.resolve({ id, ...data } as Employee)
   },
 
   softDelete: async (id: string): Promise<Employee> => {
-    return await pb.collection(Collections.Employees).update(id, {
-      isArchived: true,
-      archiveDate: new Date().toISOString()
-    })
+    return Promise.resolve({ id, isArchived: true, archiveDate: new Date().toISOString() } as Employee)
   },
 
   restore: async (id: string): Promise<Employee> => {
-    return await pb.collection(Collections.Employees).update(id, {
-      isArchived: false,
-      archiveDate: ""
-    })
+    return Promise.resolve({ id, isArchived: false, archiveDate: "" } as Employee)
   }
 }

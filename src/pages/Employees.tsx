@@ -20,7 +20,6 @@ import { SelectRoot, SelectTrigger, SelectValueText, SelectContent, SelectItemGr
 
 import { DepartmentGroup } from "@/components/employees/DepartmentGroup"
 import { Employee } from "@/types"
-import { EmployeesRecord } from "@/types/pocketbase-types"
 import { TransactionDrawer } from "@/components/transactions/TransactionDrawer"
 import { AddEmployeeForm } from "@/components/employees/AddEmployeeForm"
 import { useDepartments } from "@/hooks/useDepartments"
@@ -41,7 +40,7 @@ export const Employees = () => {
 
   // Mutations
   const updateMutation = useMutation({
-    mutationFn: ({ id, data }: { id: string, data: Partial<EmployeesRecord> }) => employeeService.update(id, data),
+    mutationFn: ({ id, data }: { id: string, data: Partial<Employee> }) => employeeService.update(id, data),
     onSuccess: () => {
       queryClient.invalidateQueries({ queryKey: ['employees'] })
       toaster.create({ title: t('toast.restored'), type: "success" })
@@ -318,7 +317,7 @@ export const Employees = () => {
                 <DepartmentGroup
                   key={parent.id}
                   department={parent}
-                  employees={groupEmployees}
+                  employees={groupEmployees as Employee[]}
                   selectedIds={selectedEmployeeIds}
                   onSelectEmployee={handleSelectOne}
                   onAction={handleAction}

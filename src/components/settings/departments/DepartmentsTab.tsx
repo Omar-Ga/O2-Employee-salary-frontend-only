@@ -6,11 +6,15 @@ import { useQuery, useMutation, useQueryClient } from "@tanstack/react-query"
 import { Tree, TreeApi } from "react-arborist"
 
 import { departmentService } from "@/services/department.service"
-import { DepartmentsRecord, DepartmentsTypeOptions } from "@/types/pocketbase-types"
 import { DepartmentNode } from "./types"
 import { flatRecordsToTree } from "./utils"
 import { DepartmentItem } from "./DepartmentItem"
 import { toaster } from "@/components/ui/toaster"
+
+const DepartmentsTypeOptions = {
+  structural: 'structural',
+  functional: 'functional'
+} as const;
 import {
   DialogBody,
   DialogCloseTrigger,
@@ -45,7 +49,7 @@ export const DepartmentsTab = () => {
 
   const createMutation = useMutation({
     mutationFn: async ({ name, parentId, type }: { name: string, parentId?: string, type: string }) => {
-      const payload: Partial<DepartmentsRecord> = { name, type: type as DepartmentsRecord['type'] }
+      const payload: any = { name, type }
       if (parentId) payload.parentId = parentId
       return await departmentService.create(payload)
     },

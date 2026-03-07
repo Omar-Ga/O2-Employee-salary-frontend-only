@@ -1,54 +1,44 @@
-import { pb } from "@/lib/pocketbase"
 import { Transaction } from "@/types"
-import type { ListResult } from 'pocketbase'
+
+// Mock ListResult
+interface ListResult<T> {
+    page: number;
+    perPage: number;
+    totalItems: number;
+    totalPages: number;
+    items: T[];
+}
+
+const emptyList = {
+    page: 1,
+    perPage: 50,
+    totalItems: 0,
+    totalPages: 0,
+    items: []
+}
 
 export const transactionService = {
-    // Get active (open) transactions
-    getAll: async (page = 1, perPage = 50, employeeId?: string): Promise<ListResult<Transaction>> => {
-        const filter = employeeId
-            ? `employeeId = "${employeeId}" && isClosed = false`
-            : 'isClosed = false'
-
-        const result = await pb.collection('transactions').getList(page, perPage, {
-            filter,
-            sort: '-created',
-        })
-        return result as unknown as ListResult<Transaction>
+    getAll: async (_page = 1, _perPage = 50, _employeeId?: string): Promise<ListResult<Transaction>> => {
+        return Promise.resolve(emptyList)
     },
 
-    getOpen: async (page = 1, perPage = 50): Promise<ListResult<Transaction>> => {
-        const result = await pb.collection('transactions').getList(page, perPage, {
-            filter: 'isClosed = false',
-            sort: '-created',
-        })
-        return result as unknown as ListResult<Transaction>
+    getOpen: async (_page = 1, _perPage = 50): Promise<ListResult<Transaction>> => {
+        return Promise.resolve(emptyList)
     },
 
-    getForEmployees: async (employeeIds: string[]): Promise<Transaction[]> => {
-        if (employeeIds.length === 0) return []
-        // Construct filter: (employeeId = 'id1' || employeeId = 'id2') && isClosed = false
-        const idFilter = employeeIds.map(id => `employeeId = "${id}"`).join(' || ')
-        const filter = `(${idFilter}) && isClosed = false`
-        
-        return await pb.collection('transactions').getFullList({
-            filter,
-            sort: '-created',
-        })
+    getForEmployees: async (_employeeIds: string[]): Promise<Transaction[]> => {
+        return Promise.resolve([])
     },
 
     create: async (data: Partial<Transaction>) => {
-        return await pb.collection('transactions').create(data)
+        return Promise.resolve({ id: 'dummy-id', ...data } as Transaction)
     },
 
-    createBulk: async (data: Partial<Transaction>[]) => {
-        const batch = pb.createBatch()
-        data.forEach(item => {
-            batch.collection('transactions').create(item)
-        })
-        return await batch.send()
+    createBulk: async (_data: Partial<Transaction>[]) => {
+        return Promise.resolve(true)
     },
 
-    delete: async (id: string) => {
-        return await pb.collection('transactions').delete(id)
+    delete: async (_id: string) => {
+        return Promise.resolve(true)
     }
 }

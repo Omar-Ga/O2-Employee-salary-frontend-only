@@ -108,14 +108,14 @@ export const PayslipsPrintTemplate = forwardRef<HTMLDivElement, PayslipsPrintTem
                                             <VStack align="stretch" gap="2">
                                                 <HStack justify="space-between" bg="gray.50" py="2" px="3" borderRadius="md">
                                                     <Text fontSize="sm" fontWeight="bold" color="gray.700">{t('payslip.basicSalary', { defaultValue: 'Basic Salary' })}</Text>
-                                                    <Text fontSize="sm" fontWeight="bold" color="gray.800">{formatCurrency(slip.basicSalary)}</Text>
+                                                    <Text fontSize="sm" fontWeight="bold" color="gray.800">{formatCurrency(slip.basicSalary || 0)}</Text>
                                                 </HStack>
                                             </VStack>
 
                                             <VStack align="stretch" gap="2">
                                                 <HStack justify="space-between" bg="green.50" py="2" px="3" borderRadius="md" border="1px solid" borderColor="green.200">
                                                     <Text fontSize="sm" fontWeight="bold" color="green.800">{t('payslip.netSalary', { defaultValue: 'Net Salary' })}</Text>
-                                                    <Text fontSize="md" fontWeight="black" color="green.800">{formatCurrency(slip.netSalary)}</Text>
+                                                    <Text fontSize="md" fontWeight="black" color="green.800">{formatCurrency(slip.netSalary || 0)}</Text>
                                                 </HStack>
                                             </VStack>
                                         </Grid>

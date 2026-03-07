@@ -58,8 +58,8 @@ export const PayrollReportPrintTemplate = forwardRef<HTMLDivElement, PayrollRepo
                 additions: acc.additions + (slip.overtimeAmount || 0) + (slip.bonusAmount || 0),
                 deductions: acc.deductions + (slip.deductionAmount || 0),
                 loans: acc.loans + (slip.advanceAmount || 0),
-                gross: acc.gross + slip.basicSalary + (slip.overtimeAmount || 0) + (slip.bonusAmount || 0),
-                net: acc.net + slip.netSalary
+                gross: acc.gross + (slip.basicSalary || 0) + (slip.overtimeAmount || 0) + (slip.bonusAmount || 0),
+                net: acc.net + (slip.netSalary || 0)
             }), { additions: 0, deductions: 0, loans: 0, gross: 0, net: 0 })
         }, [slips])
 
@@ -123,8 +123,8 @@ export const PayrollReportPrintTemplate = forwardRef<HTMLDivElement, PayrollRepo
                                 additions: acc.additions + (slip.overtimeAmount || 0) + (slip.bonusAmount || 0),
                                 deductions: acc.deductions + (slip.deductionAmount || 0),
                                 loans: acc.loans + (slip.advanceAmount || 0),
-                                gross: acc.gross + slip.basicSalary + (slip.overtimeAmount || 0) + (slip.bonusAmount || 0),
-                                net: acc.net + slip.netSalary
+                                gross: acc.gross + (slip.basicSalary || 0) + (slip.overtimeAmount || 0) + (slip.bonusAmount || 0),
+                                net: acc.net + (slip.netSalary || 0)
                             }), { additions: 0, deductions: 0, loans: 0, gross: 0, net: 0 })
 
                             return (
@@ -139,8 +139,8 @@ export const PayrollReportPrintTemplate = forwardRef<HTMLDivElement, PayrollRepo
                                             additions: acc.additions + (slip.overtimeAmount || 0) + (slip.bonusAmount || 0),
                                             deductions: acc.deductions + (slip.deductionAmount || 0),
                                             loans: acc.loans + (slip.advanceAmount || 0),
-                                            gross: acc.gross + slip.basicSalary + (slip.overtimeAmount || 0) + (slip.bonusAmount || 0),
-                                            net: acc.net + slip.netSalary
+                                            gross: acc.gross + (slip.basicSalary || 0) + (slip.overtimeAmount || 0) + (slip.bonusAmount || 0),
+                                            net: acc.net + (slip.netSalary || 0)
                                         }), { additions: 0, deductions: 0, loans: 0, gross: 0, net: 0 })
 
                                         return (
@@ -157,7 +157,7 @@ export const PayrollReportPrintTemplate = forwardRef<HTMLDivElement, PayrollRepo
                                                     const totalAdditions = (slip.overtimeAmount || 0) + (slip.bonusAmount || 0)
                                                     const totalDeductions = (slip.deductionAmount || 0)
                                                     const totalLoans = (slip.advanceAmount || 0)
-                                                    const gross = slip.basicSalary + totalAdditions
+                                                    const gross = (slip.basicSalary || 0) + totalAdditions
 
                                                     return (
                                                         <tr key={slip.id} className="avoid-break">
@@ -167,7 +167,7 @@ export const PayrollReportPrintTemplate = forwardRef<HTMLDivElement, PayrollRepo
                                                             <td className="number-cell">{formatCurrency(totalDeductions)}</td>
                                                             <td className="number-cell">{formatCurrency(totalLoans)}</td>
                                                             <td className="number-cell">{formatCurrency(gross)}</td>
-                                                            <td className="number-cell">{formatCurrency(slip.netSalary)}</td>
+                                                            <td className="number-cell">{formatCurrency(slip.netSalary || 0)}</td>
                                                             <td></td>
                                                         </tr>
                                                     )

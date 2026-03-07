@@ -1,6 +1,6 @@
 import { Button, HStack, Heading, Input, Separator, Stack, createListCollection } from "@chakra-ui/react"
 import { SelectRoot, SelectTrigger, SelectValueText, SelectContent, SelectItemGroup, SelectItem } from "@/components/ui/select"
-import { Employee } from "@/types"
+import { Employee, EmployeeScores } from "@/types"
 import type { FormEvent, ChangeEvent } from "react"
 import { useTranslation } from "react-i18next"
 import { employeeService } from "@/services/employee.service"
@@ -9,11 +9,8 @@ import { toaster } from "@/components/ui/toaster"
 import { useDepartments } from "@/hooks/useDepartments"
 import type { DepartmentConfig } from "@/lib/departments"
 import { Field } from "@/components/ui/field"
-import type { EmployeesRecord } from "@/types/pocketbase-types"
-import type { EmployeeScores } from "@/types"
-import { EmployeesGradeOptions } from "@/types/pocketbase-types"
 
-type EmployeeFormData = Pick<EmployeesRecord,
+type EmployeeFormData = Pick<Employee,
   'name' | 'email' | 'phone' | 'department' | 'jobTitle' | 'monthlySalary' | 'nationalId' | 'workHours'
 > & {
   scores: EmployeeScores
@@ -57,11 +54,11 @@ export const AddEmployeeForm = ({ onSuccess, initialData }: AddEmployeeFormProps
     return createListCollection({ items })
   }, [departmentConfig])
 
-  const calculateGrade = (p: number, d: number, r: number): EmployeesGradeOptions => {
+  const calculateGrade = (p: number, d: number, r: number): string => {
     const avg = (p + d + r) / 3
-    if (avg >= 85) return EmployeesGradeOptions.Excellent
-    if (avg >= 70) return EmployeesGradeOptions.Good
-    return EmployeesGradeOptions.Bad
+    if (avg >= 85) return 'Excellent'
+    if (avg >= 70) return 'Good'
+    return 'Bad'
   }
 
   const handleSubmit = async (e: FormEvent) => {
