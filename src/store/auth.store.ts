@@ -1,53 +1,70 @@
 import { create } from 'zustand';
-import type { UsersResponse } from '@/types';
+import { supabase } from '@/lib/supabase';
+import type { User } from '@supabase/supabase-js';
+
+export interface AppUser {
+    id: string;
+    email: string;
+    name?: string;
+    avatar?: string;
+    role?: string;
+}
 
 interface AuthState {
-    user: UsersResponse | null;
+    user: AppUser | null;
     isLoading: boolean;
-    login: (data: UsersResponse, token: string) => void;
-    logout: () => void;
-    updateUser: (user: UsersResponse) => void;
+    initialize: () => void;
+    logout: () => Promise<void>;
+    updateUser: (user: AppUser) => void;
     authenticate: (email: string, pass: string) => Promise<void>;
 }
 
-// Dummy user for UI testing
-const DUMMY_USER: UsersResponse = {
-    id: 'dummy-admin-id',
-    email: 'admin@o2mation.com',
-    name: 'UI Designer Admin',
-    role: 'admin',
-    avatar: '',
-    created: new Date().toISOString() as any,
-    updated: new Date().toISOString() as any,
-    collectionId: 'users',
-    collectionName: 'users',
-    verified: true,
-    emailVisibility: true,
-    password: '',
-    tokenKey: ''
+const mapSupabaseUser = (user: User | null): AppUser | null => {
+    if (!user) return null;
+    return {
+        id: user.id,
+        email: user.email || '',
+        name: user.user_metadata?.name,
+        avatar: user.user_metadata?.avatar,
+        role: user.user_metadata?.role || 'admin',
+    };
 };
 
 export const useAuthStore = create<AuthState>((set) => ({
-    // Default to logged IN so we skip the login screen
-    user: DUMMY_USER,
-    isLoading: false,
+    user: null,
+    isLoading: true,
 
-    login: (user, _token) => {
-        set({ user });
+    initialize: () => {
+        supabase.auth.getSession().then(({ data: { session } }) => {
+            set({ user: mapSupabaseUser(session?.user ?? null), isLoading: false });
+        });
+
+        supabase.auth.onAuthStateChange((_event, session) => {
+            set({ user: mapSupabaseUser(session?.user ?? null), isLoading: false });
+        });
     },
 
-    logout: () => {
-        set({ user: null });
+    logout: async () => {
+        set({ isLoading: true });
+        await supabase.auth.signOut();
+        set({ user: null, isLoading: false });
     },
 
     updateUser: (user) => {
         set({ user });
     },
 
-    authenticate: async (_email, _pass) => {
+    authenticate: async (email, password) => {
         set({ isLoading: true });
-        // Simulate network delay
-        await new Promise(resolve => setTimeout(resolve, 500));
-        set({ user: DUMMY_USER, isLoading: false });
+        const { error } = await supabase.auth.signInWithPassword({
+            email,
+            password,
+        });
+
+        if (error) {
+            set({ isLoading: false });
+            throw error;
+        }
     }
 }));
+

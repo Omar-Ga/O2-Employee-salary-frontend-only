@@ -12,6 +12,7 @@
       "additions": "Additions",
       "deductions": "Deductions",
       "netSalary": "Net Salary",
+      "projectedNetSalary": "Net Salary (Est.)",
       "manage": "Manage"
     },
     "employeesCount": "Employees",
@@ -19,6 +20,8 @@
     "totalNet": "Total Net",
     "globalTotalBasic": "Total Basic Payroll",
     "globalTotalNet": "Total Net Payout",
+    "projectedWarning": "Note: These are real-time projections. Final amounts are calculated when the month is closed.",
+    "totalProjectedNet": "Total Projected Net",
     "toast": {
       "monthClosed": "Month Closed & Slips Generated",
       "transactionAdded": "Transaction added"

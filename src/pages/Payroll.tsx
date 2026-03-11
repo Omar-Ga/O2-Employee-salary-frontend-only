@@ -4,7 +4,7 @@ import { employeeService } from "@/services/employee.service"
 import { useQuery, useMutation, useQueryClient } from "@tanstack/react-query"
 import { payrollService } from "@/services/payroll.service"
 import { transactionService } from "@/services/transaction.service"
-import { LuWallet, LuHistory, LuCheck, LuTrendingUp, LuBanknote, LuPrinter, LuTrash2 } from "react-icons/lu"
+import { LuWallet, LuHistory, LuCheck, LuTrendingUp, LuBanknote, LuPrinter, LuTrash2, LuInfo } from "react-icons/lu"
 import { formatCurrency } from "@/lib/utils"
 import { useState, useMemo, useRef } from "react"
 import { useReactToPrint } from "react-to-print"
@@ -36,7 +36,7 @@ export const Payroll = () => {
         </Tabs.List>
 
         <Tabs.Content value="run">
-          <PayrollRunView />
+          <PayrollRunView onNavigateToHistory={() => setActiveTab("history")} />
         </Tabs.Content>
         <Tabs.Content value="history">
           <PayrollHistoryView />
@@ -46,7 +46,7 @@ export const Payroll = () => {
   )
 }
 
-const PayrollRunView = () => {
+const PayrollRunView = ({ onNavigateToHistory }: { onNavigateToHistory: () => void }) => {
   const { t } = useTranslation('payroll')
   const { data: employeesData, isLoading: isEmpLoading } = useQuery({
     queryKey: ['employees', 'active', 'all'],
@@ -99,6 +99,7 @@ const PayrollRunView = () => {
       queryClient.invalidateQueries({ queryKey: ['payrollStats'] })
       setIsCloseDialogOpen(false)
       toaster.create({ title: t('run.toast.monthClosed'), type: "success" })
+      onNavigateToHistory()
     },
     onError: (error: Error) => {
       setIsCloseDialogOpen(false)
@@ -137,6 +138,10 @@ const PayrollRunView = () => {
 
   return (
     <Stack gap="6">
+      <Box p="3" bg="blue.50" color="blue.700" borderRadius="md" display="flex" alignItems="center" gap="2" mb="2">
+        <Icon as={LuInfo} boxSize="4" />
+        <Text fontSize="sm" fontWeight="medium">{t('run.projectedWarning', { defaultValue: 'Note: These are real-time projections. Final amounts are calculated when the month is closed.' })}</Text>
+      </Box>
       <HStack justify="space-between" align="stretch">
         <HStack gap="4" flex="1">
           {/* Summary Cards - Powered by Server Stats */}
@@ -152,7 +157,7 @@ const PayrollRunView = () => {
           <Box p="4" borderWidth="1px" borderRadius="xl" bg="white" flex="1">
             <HStack gap="3" color="green.600" mb="2">
               <Icon as={LuTrendingUp} boxSize="5" />
-              <Text fontSize="sm" fontWeight="medium" textTransform="uppercase">{t('run.globalTotalNet', { defaultValue: 'Total Net Payout' })}</Text>
+              <Text fontSize="sm" fontWeight="medium" textTransform="uppercase">{t('run.totalProjectedNet', { defaultValue: 'Total Projected Net' })}</Text>
             </HStack>
             <Text fontSize="3xl" fontWeight="bold" color="green.600">
               {formatCurrency(stats?.currentNetTotal || 0)}
@@ -293,7 +298,7 @@ const PayrollHistoryView = () => {
   // Determine if the selected run is within the 10-day revert/delete window
   const isRevertEligible = useMemo(() => {
     if (!selectedRun) return false
-    const diffMs = new Date().getTime() - new Date(selectedRun.created).getTime()
+    const diffMs = new Date().getTime() - new Date(selectedRun.createdAt).getTime()
     return diffMs <= 10 * 24 * 60 * 60 * 1000
   }, [selectedRun])
 

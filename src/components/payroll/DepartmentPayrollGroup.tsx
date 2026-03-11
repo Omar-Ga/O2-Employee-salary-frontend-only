@@ -115,7 +115,7 @@ export const DepartmentPayrollGroup = ({
                             <Text fontSize="sm" fontWeight="bold">{formatCurrency(parentTotals.basic)}</Text>
                         </Box>
                         <Box textAlign="right">
-                            <Text fontSize="xs" color="gray.500" textTransform="uppercase">{t('run.totalNet', { defaultValue: 'Total Net' })}</Text>
+                            <Text fontSize="xs" color="gray.500" textTransform="uppercase">{t('run.totalProjectedNet', { defaultValue: 'Total Projected Net' })}</Text>
                             <Text fontSize="sm" fontWeight="bold" color="green.600">{formatCurrency(parentTotals.net)}</Text>
                         </Box>
                     </HStack>
@@ -137,7 +137,7 @@ export const DepartmentPayrollGroup = ({
                                                 {t('run.table.basic')}: <Text as="span" fontWeight="bold" color="gray.700">{formatCurrency(group.totals.basic)}</Text>
                                             </Text>
                                             <Text fontSize="xs" color="gray.500">
-                                                {t('run.table.netSalary')}: <Text as="span" fontWeight="bold" color="green.600">{formatCurrency(group.totals.net)}</Text>
+                                                {t('run.table.projectedNetSalary', { defaultValue: 'Net Salary (Est.)' })}: <Text as="span" fontWeight="bold" color="green.600">{formatCurrency(group.totals.net)}</Text>
                                             </Text>
                                         </HStack>
                                     </HStack>
@@ -158,7 +158,7 @@ export const DepartmentPayrollGroup = ({
                                     <Text fontSize="10px" fontWeight="bold" color="gray.400" textTransform="uppercase" textAlign="end">{t('run.table.basic')}</Text>
                                     <Text fontSize="10px" fontWeight="bold" color="gray.400" textTransform="uppercase" textAlign="end">{t('run.table.additions')}</Text>
                                     <Text fontSize="10px" fontWeight="bold" color="gray.400" textTransform="uppercase" textAlign="end">{t('run.table.deductions')}</Text>
-                                    <Text fontSize="10px" fontWeight="bold" color="gray.400" textTransform="uppercase" textAlign="end">{t('run.table.netSalary')}</Text>
+                                    <Text fontSize="10px" fontWeight="bold" color="gray.400" textTransform="uppercase" textAlign="end">{t('run.table.projectedNetSalary', { defaultValue: 'Net Salary (Est.)' })}</Text>
                                     <Box />
                                 </Grid>
 

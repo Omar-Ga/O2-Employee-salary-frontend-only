@@ -12,6 +12,7 @@
       "additions": "الإضافات",
       "deductions": "الخصومات",
       "netSalary": "صافي الراتب",
+      "projectedNetSalary": "صافي الراتب (تقديري)",
       "manage": "إدارة"
     },
     "employeesCount": "موظف",
@@ -19,6 +20,8 @@
     "totalNet": "إجمالي الصافي",
     "globalTotalBasic": "إجمالي الرواتب الأساسية",
     "globalTotalNet": "إجمالي المدفوعات الصافية",
+    "projectedWarning": "ملاحظة: هذه توقعات في الوقت الفعلي. يتم حساب المبالغ النهائية عند إغلاق الشهر.",
+    "totalProjectedNet": "إجمالي الصافي المتوقع",
     "toast": {
       "monthClosed": "تم إغلاق الشهر وإنشاء القسائم",
       "transactionAdded": "تم إضافة المعاملة"

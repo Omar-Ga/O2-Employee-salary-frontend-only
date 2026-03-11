@@ -119,6 +119,14 @@ export const TransactionDrawer = ({ open, onOpenChange, employeeIds, onSuccess }
       })
       onOpenChange(false)
       onSuccess()
+    },
+    onError: (error) => {
+      console.error("Failed to create transaction:", error);
+      toaster.create({
+        title: t('dialog.toast.errorCreate', "Failed to create transaction"),
+        description: error instanceof Error ? error.message : "An unknown error occurred",
+        type: "error"
+      })
     }
   })
 
@@ -129,6 +137,14 @@ export const TransactionDrawer = ({ open, onOpenChange, employeeIds, onSuccess }
       toaster.create({
         title: t('dialog.toast.removed'),
         type: "success"
+      })
+    },
+    onError: (error) => {
+      console.error("Failed to delete transaction:", error);
+      toaster.create({
+        title: t('dialog.toast.errorDelete', "Failed to delete transaction"),
+        description: error instanceof Error ? error.message : "An unknown error occurred",
+        type: "error"
       })
     }
   })

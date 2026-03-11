@@ -39,8 +39,8 @@ export const Employees = () => {
   })
 
   // Mutations
-  const updateMutation = useMutation({
-    mutationFn: ({ id, data }: { id: string, data: Partial<Employee> }) => employeeService.update(id, data),
+  const restoreMutation = useMutation({
+    mutationFn: employeeService.restore,
     onSuccess: () => {
       queryClient.invalidateQueries({ queryKey: ['employees'] })
       toaster.create({ title: t('toast.restored'), type: "success" })
@@ -124,7 +124,7 @@ export const Employees = () => {
     if (action === 'archive') {
       deleteMutation.mutate(id)
     } else if (action === 'restore') {
-      updateMutation.mutate({ id, data: { isArchived: false } })
+      restoreMutation.mutate(id)
     } else if (action === 'delete') {
       console.log("Delete not fully implemented")
     } else if (action === 'transaction') {

@@ -22,26 +22,22 @@ export const useDepartments = () => {
         const subDepts = departments.filter((d) => d.type === 'functional')
 
         return rootDepts.map((root) => {
-            // Find simpler way to map ID? 
-            // Our seed didn't preserve IDs like "engineering". 
-            // We can match by name with static config to get colors?
-
-            const colorPalette = (root as any).colorPalette || 'gray'
+            const colorPalette = root.colorPalette || 'gray';
 
             const subs = subDepts
                 .filter((sub) => sub.parentId === root.id)
                 .map((sub) => ({
                     id: sub.id,
                     label: sub.name
-                }))
+                }));
 
             return {
                 id: root.id,
                 label: root.name,
-                colorPalette: colorPalette, // Fallback color
+                colorPalette: colorPalette,
                 subDepartments: subs
-            } as DepartmentConfig
-        })
+            } as DepartmentConfig;
+        });
 
     }, [departments])
 
